@@ -1,0 +1,17 @@
+[
+    {
+        "source": "Metropolia Welcome Hub",
+        "url": "https://www.metropolia.fi/en/academics/welcome-to-metropolia",
+        "content": "The Welcome Hub is your go-to place for campus-specific guidance. We help with student cards, campus maps, and general orientation. International students should visit the Welcome Hub within their first week. Located at Myllypuro campus."
+    },
+    {
+        "source": "Migri Residence Permit",
+        "url": "https://migri.fi/en/student-residence-permit",
+        "content": "Non-EU students need a residence permit. You must prove you have sufficient funds (approx 560 EUR/month) and health insurance. The application fee is around 350-450 EUR. Processing time can be 1-3 months. Apply via Enter Finland."
+    },
+    {
+        "source": "Kela Student Benefits",
+        "url": "https://www.kela.fi/web/en/students",
+        "content": "University students must pay the healthcare fee to Kela. This covers YTHS services. The due date is usually Jan 31 for spring and Sep 30 for autumn. Some students may be eligible for housing allowance depending on their rental contract and income."
+    }
+]

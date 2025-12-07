@@ -9,7 +9,7 @@ A specialized AI assistant designed to guide international students through the 
 - **Transparent Citations**: Every claim is backed by clickable sources.
 - **Modern UI**: Responsive interface built with Next.js.
 
-## 🎓 Benefits for Metropolia
+## 🎓 Benefits for Metropolia Students
 
 - **Reduced Workload**: Automates repetitive questions about permits, housing, and healthcare.
 - **Student stress reduction**: Helps alleviate anxiety by providing clear, reliable information. There's no stupid questions!

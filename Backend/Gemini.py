@@ -7,7 +7,7 @@ from google.genai import types
 load_dotenv()
 
 # Configuration
-MODEL_NAME = 'gemini-2.5-pro' 
+MODEL_NAME = 'gemini-2.5-flash-preview-09-2025' 
 API_KEY = os.getenv("GEMINI_API_KEY")
 SYSTEM_PROMPT_PATH = "system_prompt.txt"
 
@@ -132,12 +132,12 @@ def analyze_document(content, filename):
     try:
         # Attempt to parse the JSON response
         # The SDK usually returns the text in response.text
-        text_content = response.text if response.text else "{}"
+        text_content = response.text or "{}"
         return json.loads(text_content)
     except Exception as e:
         print(f"Error parsing JSON from analyze_document: {e}")
         # Fallback
         return {
-            "analysis": response.text if response.text else "Analysis failed.",
+            "analysis": response.text or "Analysis failed.",
             "checklist": []
         }

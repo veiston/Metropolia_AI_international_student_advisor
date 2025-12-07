@@ -1,67 +1,29 @@
-# Metropolia International Student helper AI 🌍
+# AI Survive Finland 🌍🇫🇮
 
-This is a submission for the coding assignment. It is a lightweight web app that uses Google Gemini to help international students navigate Finnish bureaucracy.
+A specialized AI assistant designed to guide international students through the complexities of Finnish bureaucracy and student life. Built for Metropolia University of Applied Sciences.
 
-## Structure
+## 🚀 Features
 
-- **Backend/**: Flask application handling API requests and Gemini integration.
-- **Frontend/**: Next.js application providing the user interface.
+- **Grounded Intelligence**: Uses Google Search Grounding to provide real-time, fact-checked answers (Migri, Kela, YTHS).
+- **Document Analysis**: Upload official letters or forms to receive instant summaries and actionable checklists.
+- **Transparent Citations**: Every claim is backed by clickable sources.
+- **Modern UI**: Responsive, accessible interface built with Next.js and Tailwind CSS.
 
-## Prerequisites
+## 🛠️ Tech Stack
 
-- Python 3.8+
-- Node.js 18+
-- Google Gemini API Key
+- **AI Engine**: Google Gemini API
+- **Backend**: Python / Flask
+- **Frontend**: Next.js / TypeScript
 
-## Setup Instructions
+## ⚡ Quick Start
 
-### 1. Backend Setup
+### Backend
+1. Navigate to `Backend/`.
+2. Install dependencies: `pip install -r requirements.txt`
+3. Create a `.env` based on the `.env.example` file with your `GEMINI_API_KEY`.
+4. Run: `python Server.py`
 
-1. Navigate to the `Backend` directory:
-   ```bash
-   cd Backend
-   ```
-2. Create a virtual environment (optional but recommended):
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Configure API Key:
-   - Open `.env` file.
-   - Replace `your_api_key_here` with your actual Google Gemini API key.
-5. Run the server:
-   ```bash
-   python Server.py
-   ```
-   The backend will run on `http://127.0.0.1:5000`.
-
-### 2. Frontend Setup
-
-1. Navigate to the `Frontend` directory:
-   ```bash
-   cd Frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-   The frontend will run on `http://localhost:3000`.
-
-## Features
-
-- **Smart Q&A**: Ask questions about residence permits, Kela, etc. Sources are cited.
-- **Document Scanner**: Upload documents (e.g., admission letters) to get a personalized checklist.
-- **Seeded Knowledge**: Includes pre-loaded context for Metropolia, Migri, and Kela.
-
-## Tech Stack
-
-- **Backend**: Flask, Google Generative AI SDK, SQLite
-- **Frontend**: Next.js, Tailwind CSS, TypeScript
+### Frontend
+1. Navigate to `Frontend/`.
+2. Install dependencies: `npm install`
+3. Run: `npm run dev`

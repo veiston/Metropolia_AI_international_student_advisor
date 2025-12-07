@@ -59,18 +59,18 @@ export default function Home() {
       let content = data.answer;
       let steps = undefined;
 
-      try {
-        // Try to parse if Gemini returned JSON string inside text
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
+      // Try to parse if Gemini returned JSON string inside text
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
           const parsed = JSON.parse(jsonMatch[0]);
           if (parsed.steps) {
             steps = parsed.steps;
             content = "Here is your personalized plan:";
           }
+        } catch (e) {
+          // Not JSON or invalid JSON, ignore
         }
-      } catch (e) {
-        // Not JSON
       }
 
       const botMsg: Message = {
@@ -87,7 +87,7 @@ export default function Home() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
@@ -162,45 +162,48 @@ export default function Home() {
                     </div>
                   </div>
                 )}
-                {messages.map((msg, idx) => (
-                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
-                    <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${msg.role === 'user' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
-                      <div className="prose prose-sm max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                      </div>
-
-                      {/* Steps Display */}
-                      {msg.steps && (
-                        <div className="mt-3 space-y-2">
-                          {msg.steps.map((step, sIdx) => (
-                            <div key={sIdx} className="bg-white p-3 rounded-lg border-l-4 border-orange-500 shadow-sm text-sm">
-                              <div className="font-bold text-orange-600">{step.title} {step.urgency && <span className="text-red-500 text-xs">({step.urgency})</span>}</div>
-                              <div>{step.description}</div>
-                            </div>
-                          ))}
+                {messages.map((msg, idx) => {
+                  const isUser = msg.role === 'user';
+                  return (
+                    <div key={idx} className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
+                      <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${isUser ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                         </div>
-                      )}
 
-                      {/* Citations */}
-                      {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && showSources && (
-                        <div className="mt-3 pt-3 border-t border-gray-300 text-xs">
-                          <p className="font-semibold text-gray-600 mb-2 flex items-center gap-1">
-                            <span>📚</span> Sources:
-                          </p>
-                          <ul className="space-y-1">
-                            {msg.citations.map((cit, cIdx) => (
-                              <li key={cIdx}>
-                                <a href={cit.url} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-700 hover:underline">
-                                  {cit.source}
-                                </a>
-                              </li>
+                        {/* Steps Display */}
+                        {msg.steps ? (
+                          <div className="mt-3 space-y-2">
+                            {msg.steps.map((step, sIdx) => (
+                              <div key={sIdx} className="bg-white p-3 rounded-lg border-l-4 border-orange-500 shadow-sm text-sm">
+                                <div className="font-bold text-orange-600">{step.title} {step.urgency ? <span className="text-red-500 text-xs">({step.urgency})</span> : null}</div>
+                                <div>{step.description}</div>
+                              </div>
                             ))}
-                          </ul>
-                        </div>
-                      )}
+                          </div>
+                        ) : null}
+
+                        {/* Citations */}
+                        {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && showSources ? (
+                          <div className="mt-3 pt-3 border-t border-gray-300 text-xs">
+                            <p className="font-semibold text-gray-600 mb-2 flex items-center gap-1">
+                              <span>📚</span> Sources:
+                            </p>
+                            <ul className="space-y-1">
+                              {msg.citations.map((cit, cIdx) => (
+                                <li key={cIdx}>
+                                  <a href={cit.url} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-700 hover:underline">
+                                    {cit.source}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {loading && (
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
                     <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></div>

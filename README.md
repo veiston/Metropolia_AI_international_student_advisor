@@ -30,7 +30,7 @@ A specialized AI assistant designed to guide international students through the 
 
 ---
 
-**Thank you for exploring the Metropolia AI International Student Advisor!** 🌍🇫🇮
+**Thank you for checking out my Metropolia AI International Student Advisor!** 🌍🇫🇮
 
 If you have any questions or need further assistance, feel free to reach out.
 

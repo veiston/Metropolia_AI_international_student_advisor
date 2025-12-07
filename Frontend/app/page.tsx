@@ -43,6 +43,9 @@ export default function Home() {
     if (!query.trim()) return;
 
     const userMsg: Message = { role: 'user', content: query };
+    // Prepare history for backend (exclude current message, map to simple format)
+    const history = messages.map(m => ({ role: m.role, content: m.content }));
+
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
     setQuery('');
@@ -51,35 +54,54 @@ export default function Home() {
       const res = await fetch('http://127.0.0.1:5000/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: userMsg.content }),
+        body: JSON.stringify({ query: userMsg.content, history: history }),
       });
-      const data = await res.json();
 
-      // Check if the answer is JSON (structured steps) or plain text
-      let content = data.answer;
-      let steps = undefined;
+      if (!res.body) throw new Error('No response body');
 
-      // Try to parse if Gemini returned JSON string inside text
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          if (parsed.steps) {
-            steps = parsed.steps;
-            content = "Here is your personalized plan:";
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let botMsg: Message = { role: 'assistant', content: '', citations: [] };
+
+      // Add initial empty bot message
+      setMessages(prev => [...prev, botMsg]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            if (dataStr === '[DONE]') break;
+
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.text) {
+                botMsg.content += data.text;
+                setMessages(prev => {
+                  const newMsgs = [...prev];
+                  newMsgs[newMsgs.length - 1] = { ...botMsg };
+                  return newMsgs;
+                });
+              }
+              if (data.citations) {
+                botMsg.citations = data.citations;
+                setMessages(prev => {
+                  const newMsgs = [...prev];
+                  newMsgs[newMsgs.length - 1] = { ...botMsg };
+                  return newMsgs;
+                });
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data', e);
+            }
           }
-        } catch (e) {
-          // Not JSON or invalid JSON, ignore
         }
       }
-
-      const botMsg: Message = {
-        role: 'assistant',
-        content: content,
-        citations: data.citations,
-        steps: steps
-      };
-      setMessages(prev => [...prev, botMsg]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Error connecting to server.' }]);
     } finally {
@@ -286,15 +308,6 @@ export default function Home() {
                     <h3 className="font-semibold text-sm text-orange-700 flex items-center gap-1">
                       <span>✅</span> Generated Checklist
                     </h3>
-                    {checklist.checklist_id && (
-                      <a
-                        href={`http://127.0.0.1:5000/api/checklist/${checklist.checklist_id}`}
-                        target="_blank"
-                        className="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
-                      >
-                        Download JSON
-                      </a>
-                    )}
                   </div>
 
                   {checklist.summary && (

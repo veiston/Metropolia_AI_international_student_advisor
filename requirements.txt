@@ -2,7 +2,4 @@ flask
 flask-cors
 python-dotenv
 google-genai
-werkzeug
 pypdf
-faiss-cpu
-numpy

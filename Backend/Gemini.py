@@ -4,12 +4,14 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-load_dotenv()
+# Fix: Use absolute path for .env and system_prompt.txt
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # Configuration
 MODEL_NAME = 'gemini-2.5-flash-preview-09-2025' 
 API_KEY = os.getenv("GEMINI_API_KEY")
-SYSTEM_PROMPT_PATH = "system_prompt.txt"
+SYSTEM_PROMPT_PATH = os.path.join(BASE_DIR, "system_prompt.txt")
 
 def _get_system_prompt():
     """
@@ -17,10 +19,10 @@ def _get_system_prompt():
     """
     try:
         with open(SYSTEM_PROMPT_PATH, "r", encoding="utf-8") as f:
+            print(f"Loaded system prompt from: {SYSTEM_PROMPT_PATH}")
             return f.read()
     except FileNotFoundError:
-        print("Warning: system_prompt.txt not found.")
-        return "You are a helpful assistant."
+        print(f"Warning: system_prompt.txt not found at {SYSTEM_PROMPT_PATH}")
 
 def _get_client():
     """
@@ -31,48 +33,10 @@ def _get_client():
     
     return genai.Client(api_key=API_KEY)
 
-def _process_response(response):
+def query_gemini_stream(message, history=None):
     """
-    Extracts text and citations from the response.
-    Returns a dict: {'answer': text, 'citations': [list of dicts]}
-    """
-    if not response.candidates:
-        return {"answer": "No response generated.", "citations": []}
-    
-    candidate = response.candidates[0]
-    text_parts = []
-    if candidate.content and candidate.content.parts:
-        for part in candidate.content.parts:
-            if part.text:
-                text_parts.append(part.text)
-    
-    full_text = "\n".join(text_parts)
-    
-    citations = []
-    if candidate.grounding_metadata and candidate.grounding_metadata.grounding_chunks:
-        for chunk in candidate.grounding_metadata.grounding_chunks:
-            if chunk.web:
-                citations.append({
-                    "source": chunk.web.title,
-                    "url": chunk.web.uri,
-                    "content": chunk.web.title # Fallback as we don't have snippet easily available
-                })
-                
-    # Append citations to text for display if frontend doesn't handle them separately
-    # if citations:
-    #     full_text += "\n\n**Sources:**\n"
-    #     for c in citations:
-    #         full_text += f"- [{c['source']}]({c['url']})\n"
-
-    return {
-        "answer": full_text,
-        "citations": citations
-    }
-
-def query_gemini(message, history=None):
-    """
-    Generates a response from Gemini with Google Search grounding.
-    Matches the signature expected by Server.py.
+    Generates a streaming response from Gemini with Google Search grounding.
+    Yields SSE-formatted JSON strings.
     """
     client = _get_client()
     
@@ -86,7 +50,7 @@ def query_gemini(message, history=None):
 
     system_instruction = _get_system_prompt()
 
-    response = client.models.generate_content(
+    response_stream = client.models.generate_content_stream(
         model=MODEL_NAME,
         contents=contents,
         config=types.GenerateContentConfig(
@@ -96,7 +60,25 @@ def query_gemini(message, history=None):
         )
     )
     
-    return _process_response(response)
+    for chunk in response_stream:
+        if chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
+            text = chunk.candidates[0].content.parts[0].text
+            if text:
+                yield f"data: {json.dumps({'text': text})}\n\n"
+        
+        # Handle citations if they appear in the chunk (usually last chunk)
+        if chunk.candidates and chunk.candidates[0].grounding_metadata:
+             # Re-use logic from _process_response but adapted for stream
+             citations = []
+             gm = chunk.candidates[0].grounding_metadata
+             if gm.grounding_chunks:
+                 for c in gm.grounding_chunks:
+                     if c.web:
+                         citations.append({"source": c.web.title, "url": c.web.uri})
+             if citations:
+                 yield f"data: {json.dumps({'citations': citations})}\n\n"
+
+    yield "data: [DONE]\n\n"
 
 def analyze_document(content, filename):
     """
@@ -131,9 +113,16 @@ def analyze_document(content, filename):
     
     try:
         # Attempt to parse the JSON response
-        # The SDK usually returns the text in response.text
         text_content = response.text or "{}"
-        return json.loads(text_content)
+        # Clean up potential Markdown code blocks
+        if text_content.startswith("```json"):
+            text_content = text_content[7:]
+        elif text_content.startswith("```"):
+            text_content = text_content[3:]
+        if text_content.endswith("```"):
+            text_content = text_content[:-3]
+        
+        return json.loads(text_content.strip())
     except Exception as e:
         print(f"Error parsing JSON from analyze_document: {e}")
         # Fallback

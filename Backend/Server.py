@@ -1,8 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import os
 import Gemini
 from werkzeug.utils import secure_filename
+from pypdf import PdfReader
+import io
 
 app = Flask(__name__)
 CORS(app)
@@ -20,12 +22,12 @@ def ask():
         return jsonify({"error": "No data provided"}), 400
         
     user_query = data.get('query')
+    history = data.get('history', [])
     
     if not user_query:
         return jsonify({"error": "No query provided"}), 400
 
-    response = Gemini.query_gemini(user_query)
-    return jsonify(response)
+    return Response(stream_with_context(Gemini.query_gemini_stream(user_query, history)), mimetype='text/event-stream')
 
 @app.route('/api/upload-doc', methods=['POST'])
 def upload_doc():
@@ -41,21 +43,22 @@ def upload_doc():
         
         content = ""
         try:
-            content = file.read().decode('utf-8')
-        except UnicodeDecodeError:
-            content = "Binary file content (PDF/Image) placeholder. In a real app, OCR/PDF extraction happens here."
+            if filename.lower().endswith('.pdf'):
+                print(f"Processing PDF: {filename}")
+                # Create a BytesIO object from the file content
+                file_stream = io.BytesIO(file.read())
+                pdf = PdfReader(file_stream)
+                content = "\n".join([page.extract_text() for page in pdf.pages])
+                print(f"Extracted {len(content)} characters from PDF.")
+            else:
+                content = file.read().decode('utf-8')
+        except Exception as e:
+            print(f"Error reading file: {e}")
+            content = "Error reading file content."
 
         analysis = Gemini.analyze_document(content, filename)
         
         return jsonify(analysis)
-
-@app.route('/api/check-form', methods=['POST'])
-def check_form():
-    return jsonify({"message": "Form checking endpoint implemented similar to upload-doc"})
-
-@app.route('/api/auth', methods=['POST'])
-def auth():
-    return jsonify({"token": "demo-token", "user": "Student"})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

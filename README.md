@@ -1,4 +1,4 @@
-# Metropolia International Student helper AI 🌍
+# Metropolia International Student advisor AI 🌍
 
 This is a submission for the coding assignment. It is a lightweight web app that uses Google Gemini to help international students navigate Finnish bureaucracy.
 

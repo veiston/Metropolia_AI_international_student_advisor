@@ -1,4 +1,4 @@
-# AI Survive Finland 🌍🇫🇮
+# Metropolia AI International Student Advisor 🌍🇫🇮
 
 A specialized AI assistant designed to guide international students through the complexities of Finnish bureaucracy and student life. Built for Metropolia University of Applied Sciences.
 

@@ -4,10 +4,10 @@ A specialized AI assistant designed to guide international students through the 
 
 ## 🚀 Features
 
-- **Grounded Intelligence**: Uses Google Search Grounding to provide real-time, fact-checked answers (Migri, Kela, YTHS).
+- **Grounded Intelligence**: Uses Google Search Grounding to provide real-time, fact-checked answers from **selected sources** (Migri, Kela, YTHS, HUS, Metropolia).
 - **Document Analysis**: Upload official letters or forms to receive instant summaries and actionable checklists.
 - **Transparent Citations**: Every claim is backed by clickable sources.
-- **Modern UI**: Responsive, accessible interface built with Next.js and Tailwind CSS.
+- **Modern UI**: Responsive interface built with Next.js.
 
 ## 🛠️ Tech Stack
 

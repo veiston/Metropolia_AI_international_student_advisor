@@ -2,9 +2,8 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import os
 import Gemini
+import PdfUtils
 from werkzeug.utils import secure_filename
-from pypdf import PdfReader
-import io
 
 app = Flask(__name__)
 CORS(app)
@@ -38,27 +37,29 @@ def upload_doc():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    if file:
-        filename = secure_filename(file.filename or "uploaded_file")
-        
-        content = ""
-        try:
-            if filename.lower().endswith('.pdf'):
-                print(f"Processing PDF: {filename}")
-                # Create a BytesIO object from the file content
-                file_stream = io.BytesIO(file.read())
-                pdf = PdfReader(file_stream)
-                content = "\n".join([page.extract_text() for page in pdf.pages])
-                print(f"Extracted {len(content)} characters from PDF.")
-            else:
-                content = file.read().decode('utf-8')
-        except Exception as e:
-            print(f"Error reading file: {e}")
-            content = "Error reading file content."
+    filename = secure_filename(file.filename or "uploaded_file")
+    
+    content = ""
+    try:
+        if filename.lower().endswith('.pdf'):
+            print(f"Processing PDF: {filename}")
+            content = PdfUtils.extract_text_from_pdf(file.read())
+            print(f"Extracted {len(content)} characters from PDF.")
+        else:
+            content = file.read().decode('utf-8')
+    except Exception as e:
+        print(f"Error reading file: {e}")
+        return jsonify({"error": "Failed to read file"}), 400
 
+    if not content:
+        return jsonify({"error": "Could not extract text from file"}), 400
+
+    try:
         analysis = Gemini.analyze_document(content, filename)
-        
         return jsonify(analysis)
+    except Exception as e:
+        print(f"Error analyzing document: {e}")
+        return jsonify({"error": "AI analysis failed"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

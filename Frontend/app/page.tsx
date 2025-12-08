@@ -144,7 +144,7 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-6xl mx-auto p-4">
         {/* Header */}
-        <header className="bg-white shadow-md rounded-2xl mb-4 p-4 flex items-center justify-between">
+        <header className="bg-white shadow-md rounded-2xl mb-4 p-4 flex items-centerowr justify-between">
           <div className="flex items-center gap-4">
             <Image
               src="/metropolia_cmyk_a_uusi-541377024.jpg"

@@ -2,7 +2,7 @@ import os
 import json
 from dotenv import load_dotenv
 from google import genai
-from google.genai import types
+from google.genai import types, errors
 
 # Fix: Use absolute path for .env and system_prompt.txt
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,6 +23,7 @@ def _get_system_prompt():
             return f.read()
     except FileNotFoundError:
         print(f"Warning: system_prompt.txt not found at {SYSTEM_PROMPT_PATH}")
+        return "You are a helpful assistant."
 
 def _get_client():
     """
@@ -43,7 +44,9 @@ def query_gemini_stream(message, history=None):
     contents = []
     if history:
         for msg in history:
-            role = "user" if msg.get("role") == "user" else "model"
+            role = "model"
+            if msg.get("role") == "user":
+                role = "user"
             contents.append(types.Content(role=role, parts=[types.Part(text=msg.get("content"))]))
     
     contents.append(types.Content(role="user", parts=[types.Part(text=message)]))
@@ -60,23 +63,34 @@ def query_gemini_stream(message, history=None):
         )
     )
     
-    for chunk in response_stream:
-        if chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
-            text = chunk.candidates[0].content.parts[0].text
-            if text:
-                yield f"data: {json.dumps({'text': text})}\n\n"
-        
-        # Handle citations if they appear in the chunk (usually last chunk)
-        if chunk.candidates and chunk.candidates[0].grounding_metadata:
-             # Re-use logic from _process_response but adapted for stream
-             citations = []
-             gm = chunk.candidates[0].grounding_metadata
-             if gm.grounding_chunks:
-                 for c in gm.grounding_chunks:
-                     if c.web:
-                         citations.append({"source": c.web.title, "url": c.web.uri})
-             if citations:
-                 yield f"data: {json.dumps({'citations': citations})}\n\n"
+    try:
+        for chunk in response_stream:
+            if chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
+                text = chunk.candidates[0].content.parts[0].text
+                if text:
+                    yield f"data: {json.dumps({'text': text})}\n\n"
+            
+            # Handle citations if they appear in the chunk (usually last chunk)
+            if chunk.candidates and chunk.candidates[0].grounding_metadata:
+                 # Re-use logic from _process_response but adapted for stream
+                 citations = []
+                 gm = chunk.candidates[0].grounding_metadata
+                 if gm.grounding_chunks:
+                     for c in gm.grounding_chunks:
+                         if c.web:
+                             citations.append({"source": c.web.title, "url": c.web.uri})
+                 if citations:
+                     yield f"data: {json.dumps({'citations': citations})}\n\n"
+    except errors.ClientError as e:
+        print(f"Gemini API ClientError: {e}")
+        if "RESOURCE_EXHAUSTED" in str(e):
+            error_msg = "I'm currently overloaded (Quota Exceeded). Please try again in a minute."
+        else:
+            error_msg = "I encountered an error connecting to the AI service."
+        yield f"data: {json.dumps({'text': f'\n\n**Error:** {error_msg}'})}\n\n"
+    except Exception as e:
+        print(f"Gemini API Unexpected Error: {e}")
+        yield f"data: {json.dumps({'text': '\n\n**Error:** An unexpected error occurred.'})}\n\n"
 
     yield "data: [DONE]\n\n"
 
@@ -95,21 +109,32 @@ def analyze_document(content, filename):
     {content}
     
     Output the result as a JSON object with the following keys:
-    - "analysis": A string containing the detailed analysis.
-    - "checklist": A list of strings representing the action items.
+    - "summary": A brief summary of the document.
+    - "checklist": A list of objects, each with:
+        - "title": Short title of the action item.
+        - "description": Detailed description.
+        - "urgency": "High", "Medium", or "Low".
+    - "risks": A string identifying any missing info or risks.
     """
     
     system_instruction = _get_system_prompt()
 
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            response_mime_type="application/json",
-            tools=[types.Tool(google_search=types.GoogleSearch())]
+    try:
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                response_mime_type="application/json"
+            )
         )
-    )
+    except Exception as e:
+        print(f"Error calling Gemini API: {e}")
+        return {
+            "summary": "Error communicating with AI service.",
+            "checklist": [],
+            "risks": str(e)
+        }
     
     try:
         # Attempt to parse the JSON response
@@ -127,6 +152,7 @@ def analyze_document(content, filename):
         print(f"Error parsing JSON from analyze_document: {e}")
         # Fallback
         return {
-            "analysis": response.text or "Analysis failed.",
-            "checklist": []
+            "summary": response.text or "Analysis failed.",
+            "checklist": [],
+            "risks": "Could not parse AI response."
         }

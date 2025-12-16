@@ -1,9 +1,13 @@
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import os
+import warnings
 from . import gemini
 from . import pdfutils
 from werkzeug.utils import secure_filename
+
+# Suppress Pydantic warnings seen in Vercel logs
+warnings.filterwarnings("ignore", message=".*ArbitraryTypeWarning.*")
 
 app = Flask(__name__)
 CORS(app)
@@ -13,6 +17,10 @@ CORS(app)
 #     os.makedirs(UPLOAD_FOLDER)
 
 # app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+@app.route('/')
+def index():
+    return jsonify({"status": "ok", "message": "AI Survive Finland API is running"})
 
 @app.route('/api/ask', methods=['POST'])
 def ask():

@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import os
-import Gemini
-import PdfUtils
+import gemini
+import pdfutils
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -26,7 +26,7 @@ def ask():
     if not user_query:
         return jsonify({"error": "No query provided"}), 400
 
-    return Response(stream_with_context(Gemini.query_gemini_stream(user_query, history)), mimetype='text/event-stream')
+    return Response(stream_with_context(gemini.query_gemini_stream(user_query, history)), mimetype='text/event-stream')
 
 @app.route('/api/upload-doc', methods=['POST'])
 def upload_doc():
@@ -43,7 +43,7 @@ def upload_doc():
     try:
         if filename.lower().endswith('.pdf'):
             print(f"Processing PDF: {filename}")
-            content = PdfUtils.extract_text_from_pdf(file.read())
+            content = pdfutils.extract_text_from_pdf(file.read())
             print(f"Extracted {len(content)} characters from PDF.")
         else:
             content = file.read().decode('utf-8')
@@ -55,7 +55,7 @@ def upload_doc():
         return jsonify({"error": "Could not extract text from file"}), 400
 
     try:
-        analysis = Gemini.analyze_document(content, filename)
+        analysis = gemini.analyze_document(content, filename)
         return jsonify(analysis)
     except Exception as e:
         print(f"Error analyzing document: {e}")

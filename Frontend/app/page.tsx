@@ -251,7 +251,7 @@ export default function Home() {
                   <button
                     onClick={handleAsk}
                     disabled={loading}
-                    className="bg-orange-500 text-white px-6 py-3 rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-sm hover:shadow-md"
+                    className="bg-orange-500 text-white px-6 py-3 rounded-xl hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-sm hover:shadow-md"
                   >
                     Send
                   </button>
@@ -287,14 +287,21 @@ export default function Home() {
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileUpload}
-                    className="text-xs w-full"
+                    className="hidden"
+                    id="file-upload"
                   />
+                  <label
+                    htmlFor="file-upload"
+                    className="flex-1 cursor-pointer bg-orange-500 hover:bg-orange-800 text-white text-sm py-2 px-4 rounded-lg transition-colors text-center"
+                  >
+                    {file ? file.name : 'Browse files'}
+                  </label>
                 </div>
                 {file && (
                   <button
                     onClick={submitFile}
                     disabled={loading}
-                    className="mt-2 w-full bg-orange-500 text-white text-sm py-2 rounded-lg hover:bg-orange-600 font-semibold transition-colors"
+                    className="mt-2 w-full bg-orange-500 text-white text-sm py-2 rounded-lg hover:bg-orange-800 font-semibold transition-colors"
                   >
                     Analyze {file.name}
                   </button>

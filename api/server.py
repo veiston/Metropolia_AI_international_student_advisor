@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import os
-import gemini
-import pdfutils
+from . import gemini
+from . import pdfutils
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)

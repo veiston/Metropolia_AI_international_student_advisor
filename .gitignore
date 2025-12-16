@@ -135,3 +135,10 @@ web_modules/
 .yarn/install-state.gz
 .pnp.*
 .editorconfig
+
+# Next.js
+.next/
+out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts

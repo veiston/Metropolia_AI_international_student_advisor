@@ -170,7 +170,7 @@ export default function Home() {
         <header className="bg-white shadow-md rounded-2xl mb-4 p-4 flex items-centerowr justify-between">
           <div className="flex items-center gap-4">
             <Image
-              src="/metropolia_cmyk_a_uusi-541377024.jpg"
+              src="/Metropolia_logo.jpg"
               alt="Metropolia Logo"
               width={180}
               height={60}

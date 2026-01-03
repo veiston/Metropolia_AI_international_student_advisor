@@ -4,9 +4,12 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types, errors
 
-# Fix: Use absolute path for .env and system_prompt.txt
+# Serverless-friendly configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(BASE_DIR, ".env"))
+
+# Only load .env in development (Vercel uses environment variables directly)
+if not os.getenv("VERCEL"):
+    load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # Configuration
 MODEL_NAME = 'gemini-2.5-flash-preview-09-2025' 

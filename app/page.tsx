@@ -57,6 +57,10 @@ export default function Home() {
         body: JSON.stringify({ query: userMsg.content, history: history }),
       });
 
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
       if (!res.body) throw new Error('No response body');
 
       const reader = res.body.getReader();
@@ -103,7 +107,11 @@ export default function Home() {
         }
       }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Error connecting to server.' }]);
+      console.error('API Error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '⚠️ Error connecting to server. Please check your connection and try again.'
+      }]);
     } finally {
       setLoading(false);
     }
@@ -126,14 +134,29 @@ export default function Home() {
         method: 'POST',
         body: formData,
       });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
       const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       setChecklist(data);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: `Analyzed ${file.name}. See the generated checklist below.`
       }]);
     } catch (error) {
-      alert('Error uploading file');
+      console.error('Upload Error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Error uploading file';
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `⚠️ ${errorMsg}`
+      }]);
     } finally {
       setLoading(false);
       setFile(null);

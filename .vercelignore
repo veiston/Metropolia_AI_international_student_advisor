@@ -1,0 +1,30 @@
+# Local development files
+.env
+.env.local
+.venv
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Development tools
+.vscode/
+.idea/
+*.log
+start.bat
+
+# Test files
+tests/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Build artifacts (Next.js will rebuild)
+.next/
+node_modules/
+
+# Documentation
+README.md
+LICENSE

@@ -58,7 +58,8 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
       }
 
       if (!res.body) throw new Error('No response body');
@@ -108,9 +109,10 @@ export default function Home() {
       }
     } catch (error) {
       console.error('API Error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Error connecting to server';
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⚠️ Error connecting to server. Please check your connection and try again.'
+        content: `⚠️ ${errorMsg}. Please check that the API key is configured and try again.`
       }]);
     } finally {
       setLoading(false);

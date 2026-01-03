@@ -1,18 +1,26 @@
 import os
 import json
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types, errors
 
 # Serverless-friendly configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Only load .env in development (Vercel uses environment variables directly)
 if not os.getenv("VERCEL"):
-    load_dotenv(os.path.join(BASE_DIR, ".env"))
+    env_path = os.path.join(BASE_DIR, ".env")
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+
+# Import Google AI client
+try:
+    from google import genai
+    from google.genai import types, errors
+except ImportError as e:
+    print(f"Error importing google.genai: {e}")
+    raise
 
 # Configuration
-MODEL_NAME = 'gemini-2.5-flash-preview-09-2025' 
+MODEL_NAME = 'gemini-2.5-flash'
 API_KEY = os.getenv("GEMINI_API_KEY")
 SYSTEM_PROMPT_PATH = os.path.join(BASE_DIR, "system_prompt.txt")
 
@@ -31,11 +39,19 @@ def _get_system_prompt():
 def _get_client():
     """
     Factory method to get the GenAI Client instance.
+    Validates API key before creating client.
     """
-    if not API_KEY:
-        raise ValueError("Gemini API Key is missing. Please configure it in the backend.")
+    if not API_KEY or API_KEY.strip() == '':
+        error_msg = "Gemini API Key is missing or empty. Please set GEMINI_API_KEY environment variable."
+        print(f"ERROR: {error_msg}")
+        raise ValueError(error_msg)
     
-    return genai.Client(api_key=API_KEY)
+    try:
+        client = genai.Client(api_key=API_KEY)
+        return client
+    except Exception as e:
+        print(f"Error creating Gemini client: {e}")
+        raise
 
 def query_gemini_stream(message, history=None):
     """

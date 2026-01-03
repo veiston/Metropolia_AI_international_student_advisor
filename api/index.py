@@ -1,10 +1,21 @@
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import os
+import sys
 
-from api import gemini
-from api import pdfutils
-from api.error_handlers import handle_api_error
+# Add the parent directory to the path for module imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from api import gemini
+    from api import pdfutils
+    from api.error_handlers import handle_api_error
+except ImportError:
+    # Fallback for Vercel environment
+    import gemini
+    import pdfutils
+    from error_handlers import handle_api_error
+
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -21,11 +32,17 @@ else:
 @app.route('/api/health', methods=['GET'])
 def health():
     """Health check endpoint for monitoring."""
+    api_key_configured = bool(os.getenv("GEMINI_API_KEY"))
+    status = "healthy" if api_key_configured else "degraded"
+    
     return jsonify({
-        "status": "healthy",
-        "api_key_configured": bool(os.getenv("GEMINI_API_KEY")),
-        "environment": "production" if os.getenv("VERCEL") else "development"
-    }), 200
+        "status": status,
+        "message": "API Key configured" if api_key_configured else "⚠️ GEMINI_API_KEY not set",
+        "api_key_configured": api_key_configured,
+        "environment": "production" if os.getenv("VERCEL") else "development",
+        "models_available": ["gemini-2.5-flash"] if api_key_configured else [],
+        "endpoints": ["/api/ask", "/api/upload-doc", "/api/health"]
+    }), 200 if api_key_configured else 503
 
 
 @app.route('/api/ask', methods=['POST'])
@@ -48,10 +65,17 @@ def ask():
     if not isinstance(history, list):
         return jsonify({"error": "History must be an array"}), 400
 
-    return Response(
-        stream_with_context(gemini.query_gemini_stream(user_query, history)),
-        mimetype='text/event-stream',
-    )
+    try:
+        return Response(
+            stream_with_context(gemini.query_gemini_stream(user_query, history)),
+            mimetype='text/event-stream',
+        )
+    except ValueError as e:
+        print(f"ValueError in /api/ask: {e}")
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        print(f"Unexpected error in /api/ask: {e}")
+        return jsonify({"error": f"AI service error: {str(e)}"}), 500
 
 
 @app.route('/api/upload-doc', methods=['POST'])

@@ -21,7 +21,7 @@ def check_file_exists(filepath, required=True):
 
 def check_requirements_txt():
     """Validate requirements.txt has all necessary packages."""
-    required_packages = ['flask', 'flask-cors', 'google-generativeai', 'pypdf']
+    required_packages = ['flask', 'flask-cors', 'google-genai', 'pypdf']
     
     try:
         with open('requirements.txt', 'r') as f:

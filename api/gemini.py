@@ -1,5 +1,7 @@
 import os
 import json
+from functools import lru_cache
+
 from dotenv import load_dotenv
 
 # Serverless-friendly configuration
@@ -11,7 +13,7 @@ if not os.getenv("VERCEL"):
     if os.path.exists(env_path):
         load_dotenv(env_path)
 
-# Import Google AI client
+# Import Google AI client (google-genai)
 try:
     from google import genai
     from google.genai import types, errors
@@ -19,18 +21,35 @@ except ImportError as e:
     print(f"Error importing google.genai: {e}")
     raise
 
-# Configuration
-MODEL_NAME = 'gemini-2.5-flash'
-API_KEY = os.getenv("GEMINI_API_KEY")
 SYSTEM_PROMPT_PATH = os.path.join(BASE_DIR, "system_prompt.txt")
 
-def _get_system_prompt():
-    """
-    Loads the system prompt from the file.
-    """
+
+def _truthy_env(var_name: str) -> bool:
+    value = (os.getenv(var_name) or "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
+def _get_api_key() -> str:
+    # Support a couple of common env var names to reduce deployment footguns.
+    return (
+        os.getenv("GEMINI_API_KEY")
+        or os.getenv("GOOGLE_API_KEY")
+        or ""
+    )
+
+
+def _get_model_name() -> str:
+    return (os.getenv("GEMINI_MODEL") or "gemini-2.5-flash").strip()
+
+
+def _google_search_enabled() -> bool:
+    # Default OFF for reliability on Vercel; enable explicitly when desired.
+    return _truthy_env("GEMINI_ENABLE_GOOGLE_SEARCH")
+
+@lru_cache(maxsize=1)
+def _get_system_prompt() -> str:
     try:
         with open(SYSTEM_PROMPT_PATH, "r", encoding="utf-8") as f:
-            print(f"Loaded system prompt from: {SYSTEM_PROMPT_PATH}")
             return f.read()
     except FileNotFoundError:
         print(f"Warning: system_prompt.txt not found at {SYSTEM_PROMPT_PATH}")
@@ -41,17 +60,47 @@ def _get_client():
     Factory method to get the GenAI Client instance.
     Validates API key before creating client.
     """
-    if not API_KEY or API_KEY.strip() == '':
-        error_msg = "Gemini API Key is missing or empty. Please set GEMINI_API_KEY environment variable."
+    api_key = _get_api_key().strip()
+    if not api_key:
+        error_msg = (
+            "Gemini API Key is missing or empty. "
+            "Set GEMINI_API_KEY (recommended) in Vercel Project → Settings → Environment Variables."
+        )
         print(f"ERROR: {error_msg}")
         raise ValueError(error_msg)
-    
+
     try:
-        client = genai.Client(api_key=API_KEY)
-        return client
+        return genai.Client(api_key=api_key)
     except Exception as e:
         print(f"Error creating Gemini client: {e}")
         raise
+
+
+def _build_stream_config(system_instruction: str, enable_search: bool) -> types.GenerateContentConfig:
+    if enable_search:
+        return types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            tools=[types.Tool(google_search=types.GoogleSearch())],
+            response_modalities=["TEXT"],
+        )
+    return types.GenerateContentConfig(
+        system_instruction=system_instruction,
+        response_modalities=["TEXT"],
+    )
+
+
+def _should_retry_without_search(exc: Exception) -> bool:
+    msg = str(exc)
+    # Be conservative: only retry on common “tool not allowed / invalid argument” types of failures.
+    retry_markers = [
+        "INVALID_ARGUMENT",
+        "google_search",
+        "tools",
+        "not supported",
+        "permission",
+        "PERMISSION_DENIED",
+    ]
+    return any(marker in msg for marker in retry_markers)
 
 def query_gemini_stream(message, history=None):
     """
@@ -72,17 +121,16 @@ def query_gemini_stream(message, history=None):
 
     system_instruction = _get_system_prompt()
 
-    response_stream = client.models.generate_content_stream(
-        model=MODEL_NAME,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            tools=[types.Tool(google_search=types.GoogleSearch())],
-            response_modalities=["TEXT"]
-        )
-    )
-    
+    model_name = _get_model_name()
+    enable_search = _google_search_enabled()
+
     try:
+        response_stream = client.models.generate_content_stream(
+            model=model_name,
+            contents=contents,
+            config=_build_stream_config(system_instruction, enable_search),
+        )
+
         for chunk in response_stream:
             if chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
                 text = chunk.candidates[0].content.parts[0].text
@@ -101,15 +149,36 @@ def query_gemini_stream(message, history=None):
                  if citations:
                      yield f"data: {json.dumps({'citations': citations})}\n\n"
     except errors.ClientError as e:
+        # Retry without google_search if tooling is rejected.
         print(f"Gemini API ClientError: {e}")
+        if enable_search and _should_retry_without_search(e):
+            try:
+                response_stream = client.models.generate_content_stream(
+                    model=model_name,
+                    contents=contents,
+                    config=_build_stream_config(system_instruction, enable_search=False),
+                )
+                for chunk in response_stream:
+                    if chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
+                        text = chunk.candidates[0].content.parts[0].text
+                        if text:
+                            yield f"data: {json.dumps({'text': text})}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+            except Exception as retry_exc:
+                print(f"Gemini retry (no search) failed: {retry_exc}")
+
         if "RESOURCE_EXHAUSTED" in str(e):
-            error_msg = "I'm currently overloaded (Quota Exceeded). Please try again in a minute."
+            error_msg = "Quota exceeded. Please try again shortly."
+        elif "NOT_FOUND" in str(e) or "not found" in str(e).lower():
+            error_msg = f"Model '{model_name}' not available. Set GEMINI_MODEL to a valid model name."
         else:
-            error_msg = "I encountered an error connecting to the AI service."
+            error_msg = "Could not reach Gemini service. Verify GEMINI_API_KEY and try again."
+
         yield f"data: {json.dumps({'text': f'\n\n**Error:** {error_msg}'})}\n\n"
     except Exception as e:
         print(f"Gemini API Unexpected Error: {e}")
-        yield f"data: {json.dumps({'text': '\n\n**Error:** An unexpected error occurred.'})}\n\n"
+        yield f"data: {json.dumps({'text': '\n\n**Error:** AI service error. Check Vercel logs and GEMINI_API_KEY.'})}\n\n"
 
     yield "data: [DONE]\n\n"
 
@@ -119,6 +188,7 @@ def analyze_document(content, filename):
     Matches the signature expected by Server.py.
     """
     client = _get_client()
+    model_name = _get_model_name()
     prompt = f"""
     Analyze the following document ({filename}) for clarity, tone, and compliance with Finnish bureaucratic standards.
     Identify any missing information or ambiguous language.
@@ -140,7 +210,7 @@ def analyze_document(content, filename):
 
     try:
         response = client.models.generate_content(
-            model=MODEL_NAME,
+            model=model_name,
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,

@@ -2,6 +2,5 @@ flask
 flask-cors
 python-dotenv
 google-genai
-google-generativeai
 pypdf
 

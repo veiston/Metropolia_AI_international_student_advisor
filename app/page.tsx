@@ -51,7 +51,7 @@ export default function Home() {
     setQuery('');
 
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/ask', {
+      const res = await fetch('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: userMsg.content, history: history }),
@@ -122,7 +122,7 @@ export default function Home() {
     formData.append('file', file);
 
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/upload-doc', {
+      const res = await fetch('/api/upload-doc', {
         method: 'POST',
         body: formData,
       });

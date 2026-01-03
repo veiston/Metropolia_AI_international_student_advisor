@@ -25,16 +25,17 @@ A specialized AI assistant designed to guide international students through the 
 
 ## ⚡ Quick Start
 
-### Backend
-1. Navigate to `Backend/`.
-2. Install dependencies: `pip install -r requirements.txt`
-3. Create a `.env` based on the `.env.example` file with your `GEMINI_API_KEY`.
-4. Run: `python Server.py`
+### Backend (Flask)
+1. Install dependencies: `pip install -r requirements.txt`
+2. Create a `.env` (or set env vars) with your `GEMINI_API_KEY`.
+3. Run Flask using the Vercel-compatible entrypoint:
+	- `python -m flask --app api.index run --port 5000 --debug`
 
-### Frontend
-1. Navigate to `Frontend/`.
-2. Install dependencies: `npm install`
-3. Run: `npm run dev`
+### Frontend (Next.js)
+1. Install dependencies: `npm install`
+2. Run: `npm run dev`
+
+Note: the frontend calls the API via relative paths like `/api/ask` and `/api/upload-doc`.
 
 ---
 

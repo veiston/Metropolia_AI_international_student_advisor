@@ -15,6 +15,8 @@ function HomeContent() {
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const [showSources, setShowSources] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [checklist, setChecklist] = useState<ChecklistPayload | null>(null);
@@ -22,10 +24,27 @@ function HomeContent() {
   const [activeTab, setActiveTab] = useState<'chat' | 'tools'>('chat');
   const [uploadProgress, setUploadProgress] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (autoScrollEnabled && !loading) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, loading, autoScrollEnabled]);
+
+  const handleScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    const nearBottom = distanceFromBottom < 120;
+    setAutoScrollEnabled(nearBottom);
+    setShowScrollButton(!nearBottom && distanceFromBottom > 40);
+  };
+
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+    setAutoScrollEnabled(true);
+  };
 
   const handleAsk = async () => {
     if (!query.trim()) return;
@@ -231,7 +250,7 @@ function HomeContent() {
             </div>
 
             <div className="flex flex-col md:flex-row flex-1">
-              <div className={`flex-1 flex flex-col md:border-r ${theme.divider} ${activeTab === 'tools' ? 'hidden md:flex' : ''}`}>
+              <div className={`flex-1 flex flex-col md:border-r ${theme.divider} ${activeTab === 'tools' ? 'hidden md:flex' : ''} min-h-0`}>
                 {documents.length > 0 && (
                   <div className={`flex-shrink-0 flex flex-wrap gap-2 p-4 border-b ${theme.divider} text-sm ${darkMode ? 'bg-gray-900/70' : 'bg-white/80'}`}>
                     {documents.map((doc, idx) => (
@@ -245,7 +264,11 @@ function HomeContent() {
                     </button>
                   </div>
                 )}
-                <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-4">
+                <div
+                  className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-4 relative"
+                  ref={messagesContainerRef}
+                  onScroll={handleScroll}
+                >
                   {messages.length === 0 && (
                     <div className="text-center mt-6 sm:mt-10 md:mt-16">
                       <h2 className={`text-xl sm:text-2xl font-bold ${theme.headingText} mb-2 sm:mb-3`}>Welcome to Metropolia!</h2>
@@ -274,6 +297,18 @@ function HomeContent() {
                     </div>
                   )}
                   <div ref={messagesEndRef} />
+
+                  {showScrollButton && (
+                    <div className="sticky bottom-4 flex justify-end pointer-events-none">
+                      <button
+                        onClick={scrollToBottom}
+                        className="pointer-events-auto bg-orange-500 text-white px-3 py-2 rounded-full shadow-md hover:bg-orange-600 transition text-xs font-semibold"
+                        aria-label="Scroll to bottom"
+                      >
+                        ↓ Scroll to bottom
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className={`flex-shrink-0 p-6 border-t ${theme.divider} ${darkMode ? 'bg-slate-900/60' : 'bg-white'}`}>

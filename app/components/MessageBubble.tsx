@@ -16,9 +16,23 @@ function cleanCitationUrl(url: string): { display: string; title: string } {
         if (url.includes('vertexaisearch')) {
             const parsed = new URL(url);
             const params = new URLSearchParams(parsed.search);
-            // Try to get a meaningful title from URL params or default
-            const title = params.get('q') || 'Search Result';
-            return { display: title.substring(0, 50), title };
+            // Try to get a meaningful organization name from URL path or domain
+            const pathname = parsed.pathname || '';
+            const parts = pathname.split('/').filter(p => p);
+            
+            // Common organization name patterns (try to extract from domain or path)
+            let orgName = '';
+            
+            // Extract from domain if it contains the organization
+            if (parsed.hostname) {
+                // e.g., 'kela.fi' -> 'Kela', 'metropolia.fi' -> 'Metropolia', 'yths.fi' -> 'YTHS'
+                const domainParts = parsed.hostname.split('.');
+                if (domainParts[0]) {
+                    orgName = domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
+                }
+            }
+            
+            return { display: orgName || 'Search Result', title: orgName || 'Search Result' };
         }
         const urlObj = new URL(url);
         const domain = urlObj.hostname || 'Source';

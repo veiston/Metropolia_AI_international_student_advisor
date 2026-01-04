@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Metropolia International Student Advisor",
+  title: "AI Metropolia International Student Advisor",
   description: "AI assistant for international students at Metropolia: chat, document checklists, and grounded sources.",
 };
 

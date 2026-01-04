@@ -37,7 +37,7 @@ export default function ToolsSidebar({
 
     return (
         <div
-            className={`${theme.panel} w-full md:w-96 p-4 sm:p-6 border-l overflow-y-auto ${hiddenOnMobile ? 'hidden md:block' : ''
+            className={`${theme.panel} w-full md:w-96 p-4 sm:p-6 border-l overflow-y-auto md:sticky md:top-4 md:self-start md:max-h-[calc(100vh-5rem)] ${hiddenOnMobile ? 'hidden md:block' : ''
                 }`}
         >
             <h2 className={`font-bold text-xl mb-4 flex items-center gap-2 ${theme.headingText}`}>

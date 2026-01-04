@@ -26,7 +26,14 @@ const ORGANIZATION_MAP: Record<string, string> = {
     'finlex.fi': 'Finlex',
 };
 
-const VERTEX_TARGET_KEYS = ['url', 'uri', 'target', 'source', 'sourceUri', 'link', 'href', 'destination'];
+const HINT_KEYWORDS: Record<string, string> = {
+    kela: 'Kela',
+    migri: 'Migri',
+    yths: 'YTHS',
+    metropolia: 'Metropolia',
+};
+
+const VERTEX_TARGET_KEYS = ['url', 'uri', 'target', 'targetUrl', 'source', 'sourceUri', 'link', 'href', 'destination', 'q', 'query', 'u'];
 
 function normalizeHostname(hostname?: string): string {
     if (!hostname) return '';
@@ -66,6 +73,10 @@ function extractTargetFromVertexUrl(url: string): string | null {
                     if (decodedAgain.startsWith('http')) {
                         return decodedAgain;
                     }
+                    // If still not a full URL, attempt to prepend https for host-like strings.
+                    if (/^[\w.-]+\.[A-Za-z]{2,}/.test(decodedAgain)) {
+                        return `https://${decodedAgain}`;
+                    }
                 } catch {
                     continue;
                 }
@@ -77,7 +88,16 @@ function extractTargetFromVertexUrl(url: string): string | null {
     return null;
 }
 
-function cleanCitationUrl(url: string): CleanedCitation {
+function hintToLabel(hint?: string): string | null {
+    if (!hint) return null;
+    const lower = hint.toLowerCase();
+    for (const [needle, label] of Object.entries(HINT_KEYWORDS)) {
+        if (lower.includes(needle)) return label;
+    }
+    return null;
+}
+
+function cleanCitationUrl(url: string, hint?: string): CleanedCitation {
     try {
         let targetUrl: string | null = url;
         if (url.includes('vertexaisearch')) {
@@ -87,7 +107,14 @@ function cleanCitationUrl(url: string): CleanedCitation {
             }
         }
         const parsed = new URL(targetUrl);
-        const label = friendlyLabelFromHostname(parsed.hostname);
+        let label = friendlyLabelFromHostname(parsed.hostname);
+
+        if (label === 'Web Source') {
+            const hinted = hintToLabel(hint);
+            if (hinted) {
+                label = hinted;
+            }
+        }
 
         return {
             display: label,
@@ -95,9 +122,10 @@ function cleanCitationUrl(url: string): CleanedCitation {
             meta: targetUrl,
         };
     } catch {
+        const hinted = hintToLabel(hint);
         return {
-            display: 'Source',
-            title: 'Source',
+            display: hinted || 'Source',
+            title: hinted || 'Source',
             meta: url.substring(0, 60),
         };
     }
@@ -158,7 +186,7 @@ export default function MessageBubble({ msg, showSources }: Props) {
                         {(sourcesExpanded || visibleCitations.length > 0) && (
                             <div className="space-y-2">
                                 {visibleCitations.map((cit, cIdx) => {
-                                    const cleaned = cleanCitationUrl(cit.url);
+                                    const cleaned = cleanCitationUrl(cit.url, cit.content);
                                     return (
                                         <a
                                             key={cIdx}

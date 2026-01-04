@@ -230,7 +230,7 @@ function HomeContent() {
               ))}
             </div>
 
-            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+            <div className="flex flex-col md:flex-row flex-1">
               <div className={`flex-1 flex flex-col md:border-r ${theme.divider} ${activeTab === 'tools' ? 'hidden md:flex' : ''}`}>
                 {documents.length > 0 && (
                   <div className={`flex-shrink-0 flex flex-wrap gap-2 p-4 border-b ${theme.divider} text-sm ${darkMode ? 'bg-gray-900/70' : 'bg-white/80'}`}>

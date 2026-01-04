@@ -193,11 +193,11 @@ export default function MessageBubble({ msg, showSources }: Props) {
                                             href={cit.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className={`block rounded-lg p-3 shadow-sm transition hover:shadow-md ${theme.linkCard}`}
+                                            className={`block rounded-lg p-3 shadow-sm transition hover:shadow-md ${theme.linkCard} w-full break-words`}
                                         >
                                             <span className="text-xs uppercase tracking-wide font-semibold text-gray-600 dark:text-slate-400">{cleaned.display}</span>
-                                            <span className={`text-sm font-medium block mt-1 break-words max-w-full ${theme.linkCardTitle}`}>{cit.content || cleaned.title}</span>
-                                            <span className={`text-[11px] mt-1 ${theme.linkCardMeta}`}>{cleaned.meta}</span>
+                                            <span className={`text-sm font-medium block mt-1 break-words ${theme.linkCardTitle}`}>{cit.content || cleaned.title}</span>
+                                            <span className={`text-[11px] mt-1 break-all ${theme.linkCardMeta}`}>{cleaned.meta}</span>
                                         </a>
                                     );
                                 })}

@@ -37,8 +37,7 @@ export default function ToolsSidebar({
 
     return (
         <div
-            className={`${theme.panel} w-full md:w-96 p-4 sm:p-6 border-l overflow-y-auto ${hiddenOnMobile ? 'hidden md:block' : ''
-                }`}
+            className={`${theme.panel} w-full md:w-96 p-4 sm:p-6 border-l overflow-y-auto ${hiddenOnMobile ? 'hidden md:block' : ''} md:sticky md:top-4 md:self-start md:max-h-[calc(100vh-3rem)]`}
         >
             <h2 className={`font-bold text-xl mb-4 flex items-center gap-2 ${theme.headingText}`}>
                 <span role="img" aria-label="tools">🛠️</span> Tools
@@ -90,9 +89,9 @@ export default function ToolsSidebar({
                         {checklistItems.map((item: ChecklistItem, idx: number) => (
                             <div key={idx} className="flex items-start gap-2 text-sm">
                                 <input type="checkbox" className="mt-1" />
-                                <div>
-                                    <p className="font-medium">{item.title}</p>
-                                    <p className={`text-xs ${theme.subtleText}`}>{item.description}</p>
+                                <div
+                                    className={`${theme.panel} w-full md:w-96 p-4 sm:p-6 border-l overflow-y-auto ${hiddenOnMobile ? 'hidden md:block' : ''} md:sticky md:top-4 md:self-start md:max-h-[calc(100vh-3rem)]`}
+                                >
                                     {item.urgency && (
                                         <span className="text-[10px] text-red-500 font-bold uppercase">{item.urgency}</span>
                                     )}

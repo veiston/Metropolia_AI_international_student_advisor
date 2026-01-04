@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import Image from 'next/image';
 import DocumentChip from './components/DocumentChip';
 import MessageBubble from './components/MessageBubble';
@@ -25,6 +26,7 @@ function HomeContent() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const scrollLockTopRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (autoScrollEnabled && !loading) {
@@ -32,18 +34,52 @@ function HomeContent() {
     }
   }, [messages, loading, autoScrollEnabled]);
 
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    if (loading) {
+      scrollLockTopRef.current = container.scrollTop;
+      setAutoScrollEnabled(false);
+      setShowScrollButton(true);
+    } else {
+      scrollLockTopRef.current = null;
+      setShowScrollButton(false);
+    }
+  }, [loading]);
+
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (!loading) return;
+    if (autoScrollEnabled) return;
+    if (scrollLockTopRef.current == null) return;
+    container.scrollTop = scrollLockTopRef.current;
+  }, [messages, loading, autoScrollEnabled]);
+
   const handleScroll = () => {
     const container = messagesContainerRef.current;
     if (!container) return;
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     const nearBottom = distanceFromBottom < 120;
+
+    if (loading) {
+      // During streaming we never auto-follow; keep position locked unless user clicks the button.
+      scrollLockTopRef.current = container.scrollTop;
+      setAutoScrollEnabled(false);
+      setShowScrollButton(!nearBottom);
+      return;
+    }
+
     setAutoScrollEnabled(nearBottom);
-    setShowScrollButton(!nearBottom && distanceFromBottom > 40);
+    setShowScrollButton(!nearBottom);
   };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     setAutoScrollEnabled(true);
+    scrollLockTopRef.current = null;
+    setShowScrollButton(false);
   };
 
   const handleAsk = async () => {
@@ -55,6 +91,8 @@ function HomeContent() {
     setMessages(prev => [...prev, userMsg]);
     setActiveTab('chat');
     setLoading(true);
+    setAutoScrollEnabled(false);
+    setShowScrollButton(true);
     setQuery('');
 
     try {
@@ -268,6 +306,7 @@ function HomeContent() {
                   className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-4 relative"
                   ref={messagesContainerRef}
                   onScroll={handleScroll}
+                  style={{ overflowAnchor: 'none' }}
                 >
                   {messages.length === 0 && (
                     <div className="text-center mt-6 sm:mt-10 md:mt-16">
@@ -299,7 +338,7 @@ function HomeContent() {
                   <div ref={messagesEndRef} />
 
                   {showScrollButton && (
-                    <div className="sticky bottom-4 flex justify-end pointer-events-none">
+                    <div className="absolute bottom-6 right-6 pointer-events-none">
                       <button
                         onClick={scrollToBottom}
                         className="pointer-events-auto bg-orange-500 text-white px-3 py-2 rounded-full shadow-md hover:bg-orange-600 transition text-xs font-semibold"

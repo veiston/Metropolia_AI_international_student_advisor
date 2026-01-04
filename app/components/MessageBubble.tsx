@@ -10,36 +10,96 @@ interface Props {
 }
 
 // Helper to extract domain from URL or clean up raw API URLs
-function cleanCitationUrl(url: string): { display: string; title: string } {
+interface CleanedCitation {
+    display: string;
+    title: string;
+    meta: string;
+}
+
+const ORGANIZATION_MAP: Record<string, string> = {
+    'kela.fi': 'Kela',
+    'migri.fi': 'Migri',
+    'metropolia.fi': 'Metropolia',
+    'yths.fi': 'YTHS',
+    'studyinfo.fi': 'Studyinfo',
+    'opintopolku.fi': 'Opintopolku',
+    'finlex.fi': 'Finlex',
+};
+
+const VERTEX_TARGET_KEYS = ['url', 'uri', 'target', 'source', 'sourceUri', 'link', 'href', 'destination'];
+
+function normalizeHostname(hostname?: string): string {
+    if (!hostname) return '';
+    return hostname.replace(/^www\./i, '').toLowerCase();
+}
+
+function friendlyLabelFromHostname(hostname?: string): string {
+    const normalized = normalizeHostname(hostname);
+    if (!normalized) return 'Source';
+    if (normalized.includes('vertexaisearch')) {
+        return 'Web Source';
+    }
+    for (const [suffix, label] of Object.entries(ORGANIZATION_MAP)) {
+        if (normalized.endsWith(suffix)) {
+            return label;
+        }
+    }
+    const primary = normalized.split('.')[0];
+    return primary ? primary.charAt(0).toUpperCase() + primary.slice(1) : 'Source';
+}
+
+function extractTargetFromVertexUrl(url: string): string | null {
     try {
-        // If it's a vertexaisearch internal URL, extract source info
-        if (url.includes('vertexaisearch')) {
-            const parsed = new URL(url);
-            const params = new URLSearchParams(parsed.search);
-            // Try to get a meaningful organization name from URL path or domain
-            const pathname = parsed.pathname || '';
-            const parts = pathname.split('/').filter(p => p);
-            
-            // Common organization name patterns (try to extract from domain or path)
-            let orgName = '';
-            
-            // Extract from domain if it contains the organization
-            if (parsed.hostname) {
-                // e.g., 'kela.fi' -> 'Kela', 'metropolia.fi' -> 'Metropolia', 'yths.fi' -> 'YTHS'
-                const domainParts = parsed.hostname.split('.');
-                if (domainParts[0]) {
-                    orgName = domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
+        const parsed = new URL(url);
+        for (const key of VERTEX_TARGET_KEYS) {
+            const raw = parsed.searchParams.get(key);
+            if (!raw) continue;
+            try {
+                const decoded = new URL(raw);
+                return decoded.href;
+            } catch {
+                if (raw.startsWith('http')) {
+                    return raw;
+                }
+                try {
+                    const decodedAgain = decodeURIComponent(raw);
+                    if (decodedAgain.startsWith('http')) {
+                        return decodedAgain;
+                    }
+                } catch {
+                    continue;
                 }
             }
-            
-            return { display: orgName || 'Search Result', title: orgName || 'Search Result' };
         }
-        const urlObj = new URL(url);
-        const domain = urlObj.hostname || 'Source';
-        return { display: domain, title: domain };
     } catch {
-        // If URL is malformed, show truncated version
-        return { display: url.substring(0, 40), title: url };
+        // ignore parsing errors
+    }
+    return null;
+}
+
+function cleanCitationUrl(url: string): CleanedCitation {
+    try {
+        let targetUrl: string | null = url;
+        if (url.includes('vertexaisearch')) {
+            const decodedTarget = extractTargetFromVertexUrl(url);
+            if (decodedTarget) {
+                targetUrl = decodedTarget;
+            }
+        }
+        const parsed = new URL(targetUrl);
+        const label = friendlyLabelFromHostname(parsed.hostname);
+
+        return {
+            display: label,
+            title: label,
+            meta: targetUrl,
+        };
+    } catch {
+        return {
+            display: 'Source',
+            title: 'Source',
+            meta: url.substring(0, 60),
+        };
     }
 }
 
@@ -109,6 +169,7 @@ export default function MessageBubble({ msg, showSources }: Props) {
                                         >
                                             <span className="text-xs uppercase tracking-wide font-semibold text-gray-600 dark:text-slate-400">{cleaned.display}</span>
                                             <span className={`text-sm font-medium block mt-1 break-words max-w-full ${theme.linkCardTitle}`}>{cit.content || cleaned.title}</span>
+                                            <span className={`text-[11px] mt-1 ${theme.linkCardMeta}`}>{cleaned.meta}</span>
                                         </a>
                                     );
                                 })}

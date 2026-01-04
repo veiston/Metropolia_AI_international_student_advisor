@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message } from '../types';
 import { useTheme } from './ThemeProvider';
+import { useState } from 'react';
 
 interface Props {
     msg: Message;
@@ -11,6 +12,13 @@ interface Props {
 export default function MessageBubble({ msg, showSources }: Props) {
     const { theme, darkMode } = useTheme();
     const isUser = msg.role === 'user';
+    const [sourcesExpanded, setSourcesExpanded] = useState(false);
+
+    const visibleCitations = msg.citations && msg.citations.length > 0
+        ? (sourcesExpanded ? msg.citations : msg.citations.slice(0, 3))
+        : [];
+
+    const hasMoreSources = msg.citations && msg.citations.length > 3;
 
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
@@ -39,24 +47,49 @@ export default function MessageBubble({ msg, showSources }: Props) {
 
                 {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && showSources ? (
                     <div className={`mt-3 pt-3 border-t ${darkMode ? 'border-slate-700' : 'border-gray-300'}`}>
-                        <p className={`font-semibold mb-2 flex items-center gap-1 ${darkMode ? 'text-slate-200' : 'text-gray-600'}`}>
-                            <span role="img" aria-label="sources">📚</span> Sources
-                        </p>
-                        <div className="space-y-2">
-                            {msg.citations.map((cit, cIdx) => (
-                                <a
-                                    key={cIdx}
-                                    href={cit.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`flex flex-col rounded-lg p-3 shadow-sm transition ${theme.linkCard}`}
-                                >
-                                    <span className="text-xs uppercase tracking-wide text-orange-600">{cit.source}</span>
-                                    <span className={`text-[13px] font-medium break-words ${theme.linkCardTitle}`}>{cit.content || cit.url}</span>
-                                    <span className={`text-[11px] mt-1 ${theme.linkCardMeta}`}>{cit.url}</span>
-                                </a>
-                            ))}
-                        </div>
+                        <button
+                            onClick={() => setSourcesExpanded(!sourcesExpanded)}
+                            className={`w-full flex items-center gap-2 mb-2 p-2 rounded-lg transition-colors ${darkMode
+                                    ? 'hover:bg-slate-800 text-slate-200'
+                                    : 'hover:bg-gray-100 text-gray-600'
+                                }`}
+                        >
+                            <span role="img" aria-label="sources">📚</span>
+                            <span className="font-semibold">Sources {msg.citations.length > 0 && `(${msg.citations.length})`}</span>
+                            <span className={`ml-auto text-sm transition-transform ${sourcesExpanded ? 'rotate-180' : ''}`}>
+                                ▼
+                            </span>
+                        </button>
+
+                        {(sourcesExpanded || visibleCitations.length > 0) && (
+                            <div className="space-y-2">
+                                {visibleCitations.map((cit, cIdx) => (
+                                    <a
+                                        key={cIdx}
+                                        href={cit.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`flex flex-col rounded-lg p-3 shadow-sm transition ${theme.linkCard}`}
+                                    >
+                                        <span className="text-xs uppercase tracking-wide text-orange-600">{cit.source}</span>
+                                        <span className={`text-[13px] font-medium break-words ${theme.linkCardTitle}`}>{cit.content || cit.url}</span>
+                                        <span className={`text-[11px] mt-1 ${theme.linkCardMeta}`}>{cit.url}</span>
+                                    </a>
+                                ))}
+
+                                {hasMoreSources && !sourcesExpanded && (
+                                    <button
+                                        onClick={() => setSourcesExpanded(true)}
+                                        className={`w-full mt-2 p-2 text-sm font-medium rounded-lg transition-colors ${darkMode
+                                                ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        Show {msg.citations.length - 3} more source{msg.citations.length - 3 !== 1 ? 's' : ''}
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 ) : null}
             </div>

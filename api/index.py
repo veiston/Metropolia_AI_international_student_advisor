@@ -1,31 +1,27 @@
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 import os
 import sys
 
-# Add the parent directory to the path for module imports
+# Add parent directory to path for module imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from api import gemini
-    from api import pdfutils
+    from api import gemini, pdfutils
     from api.error_handlers import handle_api_error
 except ImportError:
-    # Fallback for Vercel environment
+    # Fallback for Vercel
     import gemini
     import pdfutils
     from error_handlers import handle_api_error
 
-from werkzeug.utils import secure_filename
-
 app = Flask(__name__)
 
-# CORS configuration - more restrictive in production
+# CORS configuration
 if os.getenv("VERCEL"):
-    # Production: Allow specific origins
-    CORS(app, resources={r"/api/*": {"origins": ["*"]}})  # Replace with your domain
+    CORS(app, resources={r"/api/*": {"origins": ["*"]}})
 else:
-    # Development: Allow all origins
     CORS(app)
 
 
@@ -33,15 +29,9 @@ else:
 def health():
     """Health check endpoint for monitoring."""
     api_key_configured = bool(os.getenv("GEMINI_API_KEY"))
-    status = "healthy" if api_key_configured else "degraded"
-    
     return jsonify({
-        "status": status,
-        "message": "API Key configured" if api_key_configured else "⚠️ GEMINI_API_KEY not set",
+        "status": "healthy" if api_key_configured else "degraded",
         "api_key_configured": api_key_configured,
-        "environment": "production" if os.getenv("VERCEL") else "development",
-        "models_available": ["gemini-2.5-flash"] if api_key_configured else [],
-        "endpoints": ["/api/ask", "/api/upload-doc", "/api/health"]
     }), 200 if api_key_configured else 503
 
 

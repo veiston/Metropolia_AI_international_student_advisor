@@ -159,9 +159,9 @@ function HomeContent() {
   };
 
   return (
-    <main className={`min-h-screen ${theme.page}`}>
-      <div className="max-w-6xl mx-auto px-4 pb-4 pt-3 sm:pt-4">
-        <header className={`rounded-2xl mb-3 sm:mb-4 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 ${theme.header}`}>
+    <main className={`flex flex-col h-screen ${theme.page}`}>
+      <div className="flex-shrink-0 max-w-6xl w-full mx-auto px-4 pb-3 sm:pb-4 pt-3 sm:pt-4">
+        <header className={`rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 ${theme.header}`}>
           <div className="flex items-center gap-3 sm:gap-4">
             <div className={''}>
               <Image
@@ -185,113 +185,113 @@ function HomeContent() {
             {darkMode ? 'Light mode' : 'Dark mode'}
           </button>
         </header>
+      </div>
 
-        <div className={`shadow-xl rounded-2xl overflow-hidden ${theme.container}`}>
-          <div className={`md:hidden flex border-b ${theme.divider}`}>
-            {['chat', 'tools'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as 'chat' | 'tools')}
-                className={`flex-1 py-2.5 text-sm font-semibold transition ${activeTab === tab
-                  ? 'bg-orange-500 text-white'
-                  : darkMode
-                    ? 'bg-transparent text-slate-200'
-                    : 'bg-transparent text-gray-700'
-                  }`}
-              >
-                {tab === 'chat' ? 'Chat' : 'Tools'}
-              </button>
-            ))}
-          </div>
+      <div className={`flex-1 max-w-6xl w-full mx-auto px-4 pb-4 shadow-xl rounded-2xl overflow-hidden ${theme.container}`}>
+        <div className={`md:hidden flex border-b ${theme.divider}`}>
+          {['chat', 'tools'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab as 'chat' | 'tools')}
+              className={`flex-1 py-2.5 text-sm font-semibold transition ${activeTab === tab
+                ? 'bg-orange-500 text-white'
+                : darkMode
+                  ? 'bg-transparent text-slate-200'
+                  : 'bg-transparent text-gray-700'
+                }`}
+            >
+              {tab === 'chat' ? 'Chat' : 'Tools'}
+            </button>
+          ))}
+        </div>
 
-          <div className="flex flex-col md:flex-row h-[calc(100dvh-11rem)] md:h-[calc(100dvh-10rem)]">
-            <div className={`flex-1 flex flex-col md:border-r ${theme.divider} ${activeTab === 'tools' ? 'hidden md:flex' : ''}`}>
-              {documents.length > 0 && (
-                <div className={`flex flex-wrap gap-2 p-4 border-b ${theme.divider} text-sm ${darkMode ? 'bg-gray-900/70' : 'bg-white/80'}`}>
-                  {documents.map((doc, idx) => (
-                    <DocumentChip key={idx} doc={doc} />
-                  ))}
-                  <button
-                    onClick={() => setDocuments([])}
-                    className="ml-auto text-xs text-gray-500 underline"
-                  >
-                    Clear documents
-                  </button>
-                </div>
-              )}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-                {messages.length === 0 && (
-                  <div className="text-center mt-6 sm:mt-10 md:mt-16">
-                    <h2 className={`text-xl sm:text-2xl font-bold ${theme.headingText} mb-2 sm:mb-3`}>Welcome to Metropolia!</h2>
-                    <p className={`${theme.bodyText} mb-4 sm:mb-6`}>Ask me anything about student life in Finland</p>
-                    <div className="space-y-2 max-w-md mx-auto">
-                      <div className={`border rounded-lg p-3 text-sm text-left ${darkMode ? 'bg-slate-800/60 border-orange-400/40' : 'bg-orange-50 border-orange-200'}`}>
-                        <span className="text-orange-500 font-semibold">Try: </span>
-                        <span className={darkMode ? 'text-slate-100' : 'text-gray-800'}>&quot;How do I apply for a residence permit?&quot;</span>
-                      </div>
-                      <div className={`border rounded-lg p-3 text-sm text-left ${darkMode ? 'bg-slate-800/60 border-orange-400/40' : 'bg-orange-50 border-orange-200'}`}>
-                        <span className="text-orange-500 font-semibold">Try: </span>
-                        <span className={darkMode ? 'text-slate-100' : 'text-gray-800'}>&quot;What is the YTHS healthcare fee?&quot;</span>
-                      </div>
+        <div className="flex flex-col md:flex-row h-full">
+          <div className={`flex-1 flex flex-col md:border-r ${theme.divider} ${activeTab === 'tools' ? 'hidden md:flex' : ''}`}>
+            {documents.length > 0 && (
+              <div className={`flex-shrink-0 flex flex-wrap gap-2 p-4 border-b ${theme.divider} text-sm ${darkMode ? 'bg-gray-900/70' : 'bg-white/80'}`}>
+                {documents.map((doc, idx) => (
+                  <DocumentChip key={idx} doc={doc} />
+                ))}
+                <button
+                  onClick={() => setDocuments([])}
+                  className="ml-auto text-xs text-gray-500 underline"
+                >
+                  Clear documents
+                </button>
+              </div>
+            )}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+              {messages.length === 0 && (
+                <div className="text-center mt-6 sm:mt-10 md:mt-16">
+                  <h2 className={`text-xl sm:text-2xl font-bold ${theme.headingText} mb-2 sm:mb-3`}>Welcome to Metropolia!</h2>
+                  <p className={`${theme.bodyText} mb-4 sm:mb-6`}>Ask me anything about student life in Finland</p>
+                  <div className="space-y-2 max-w-md mx-auto">
+                    <div className={`border rounded-lg p-3 text-sm text-left ${darkMode ? 'bg-slate-800/60 border-orange-400/40' : 'bg-orange-50 border-orange-200'}`}>
+                      <span className="text-orange-500 font-semibold">Try: </span>
+                      <span className={darkMode ? 'text-slate-100' : 'text-gray-800'}>&quot;How do I apply for a residence permit?&quot;</span>
+                    </div>
+                    <div className={`border rounded-lg p-3 text-sm text-left ${darkMode ? 'bg-slate-800/60 border-orange-400/40' : 'bg-orange-50 border-orange-200'}`}>
+                      <span className="text-orange-500 font-semibold">Try: </span>
+                      <span className={darkMode ? 'text-slate-100' : 'text-gray-800'}>&quot;What is the YTHS healthcare fee?&quot;</span>
                     </div>
                   </div>
-                )}
-                {messages.map((msg, idx) => (
-                  <MessageBubble key={idx} msg={msg} showSources={showSources} />
-                ))}
-                {loading && (
-                  <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                    <span>Thinking...</span>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <div className={`p-4 border-t ${theme.divider} ${darkMode ? 'bg-slate-900/60' : 'bg-white'}`}>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAsk()}
-                    placeholder="Ask a question..."
-                    className={`flex-1 p-3 border-2 rounded-xl focus:outline-none focus:border-orange-500 transition-colors ${theme.input}`}
-                  />
-                  <button
-                    onClick={handleAsk}
-                    disabled={loading}
-                    className="bg-orange-500 text-white px-4 sm:px-6 py-3 rounded-xl hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-sm hover:shadow-md"
-                  >
-                    Send
-                  </button>
                 </div>
-                <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                  <label className="flex items-center gap-2 cursor-pointer hover:text-orange-600 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={showSources}
-                      onChange={(e) => setShowSources(e.target.checked)}
-                      className="rounded text-orange-500 focus:ring-orange-500"
-                    />
-                    Show Sources
-                  </label>
+              )}
+              {messages.map((msg, idx) => (
+                <MessageBubble key={idx} msg={msg} showSources={showSources} />
+              ))}
+              {loading && (
+                <div className="flex items-center gap-2 text-gray-500 text-sm">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                  <span>Thinking...</span>
                 </div>
-              </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
 
-            <ToolsSidebar
-              file={file}
-              onFileSelected={setFile}
-              onSubmit={submitFile}
-              loading={loading}
-              checklist={checklist}
-              uploadProgress={uploadProgress}
-              hiddenOnMobile={activeTab === 'chat'}
-            />
+            <div className={`flex-shrink-0 p-4 border-t ${theme.divider} ${darkMode ? 'bg-slate-900/60' : 'bg-white'}`}>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAsk()}
+                  placeholder="Ask a question..."
+                  className={`flex-1 p-3 border-2 rounded-xl focus:outline-none focus:border-orange-500 transition-colors ${theme.input}`}
+                />
+                <button
+                  onClick={handleAsk}
+                  disabled={loading}
+                  className="bg-orange-500 text-white px-4 sm:px-6 py-3 rounded-xl hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-sm hover:shadow-md"
+                >
+                  Send
+                </button>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                <label className="flex items-center gap-2 cursor-pointer hover:text-orange-600 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={showSources}
+                    onChange={(e) => setShowSources(e.target.checked)}
+                    className="rounded text-orange-500 focus:ring-orange-500"
+                  />
+                  Show Sources
+                </label>
+              </div>
+            </div>
           </div>
+
+          <ToolsSidebar
+            file={file}
+            onFileSelected={setFile}
+            onSubmit={submitFile}
+            loading={loading}
+            checklist={checklist}
+            uploadProgress={uploadProgress}
+            hiddenOnMobile={activeTab === 'chat'}
+          />
         </div>
       </div>
     </main>

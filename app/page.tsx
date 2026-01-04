@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import Image from 'next/image';
 import DocumentChip from './components/DocumentChip';
 import MessageBubble from './components/MessageBubble';
@@ -34,20 +34,6 @@ function HomeContent() {
     }
   }, [messages, loading, autoScrollEnabled]);
 
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-
-    if (loading) {
-      scrollLockTopRef.current = container.scrollTop;
-      setAutoScrollEnabled(false);
-      setShowScrollButton(true);
-    } else {
-      scrollLockTopRef.current = null;
-      setShowScrollButton(false);
-    }
-  }, [loading]);
-
   useLayoutEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -57,7 +43,7 @@ function HomeContent() {
     container.scrollTop = scrollLockTopRef.current;
   }, [messages, loading, autoScrollEnabled]);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
@@ -73,7 +59,22 @@ function HomeContent() {
 
     setAutoScrollEnabled(nearBottom);
     setShowScrollButton(!nearBottom);
-  };
+  }, [loading]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    if (loading) {
+      scrollLockTopRef.current = container.scrollTop;
+      setAutoScrollEnabled(false);
+      setShowScrollButton(true);
+    } else {
+      scrollLockTopRef.current = null;
+      setShowScrollButton(false);
+      handleScroll();
+    }
+  }, [loading, handleScroll]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

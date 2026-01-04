@@ -19,7 +19,11 @@ try:
     from google.genai import types, errors
 except ImportError as e:
     print(f"Error importing google.genai: {e}")
-    raise
+    # We do not raise immediately to allow the file to be imported for type checking,
+    # but runtime calls will fail if this is missing.
+    genai = None
+    types = None
+    errors = None
 
 SYSTEM_PROMPT_PATH = os.path.join(BASE_DIR, "system_prompt.txt")
 
@@ -39,12 +43,83 @@ def _get_api_key() -> str:
 
 
 def _get_model_name() -> str:
+    # Defaults to 2.5-flash as requested, but can be overridden by env var.
     return (os.getenv("GEMINI_MODEL") or "gemini-2.5-flash").strip()
 
 
 def _google_search_enabled() -> bool:
-    # Default OFF for reliability on Vercel; enable explicitly when desired.
+    # Default ON (user requirement). Can be disabled explicitly.
+    if os.getenv("GEMINI_ENABLE_GOOGLE_SEARCH") is None:
+        return True
     return _truthy_env("GEMINI_ENABLE_GOOGLE_SEARCH")
+
+
+def _format_documents(documents) -> str:
+    if not documents:
+        return ""
+
+    safe_docs = []
+    for doc in documents:
+        if not isinstance(doc, dict):
+            continue
+        name = (doc.get("name") or "document").strip()
+        text = doc.get("text") or ""
+        if not isinstance(text, str):
+            continue
+        text = text.strip()
+        if not text:
+            continue
+        safe_docs.append((name, text))
+
+    if not safe_docs:
+        return ""
+
+    parts = [
+        "You also have access to the following uploaded document(s).",
+        "Use them to answer questions about the user's uploaded files.",
+        "If the user asks about the document, quote or paraphrase from it.",
+        "When you use web information, provide sources via citations.",
+        "---",
+    ]
+
+    for name, text in safe_docs:
+        parts.append(f"Document: {name}")
+        parts.append(text)
+        parts.append("---")
+
+    return "\n".join(parts)
+
+
+def _extract_citations_from_chunk(chunk) -> list[dict]:
+    """
+    Extracts citation metadata from a streaming chunk.
+    Works with google-genai SDK v0.3+ structure.
+    """
+    citations = []
+    try:
+        if not (chunk and chunk.candidates):
+            return citations
+        
+        # Check first candidate
+        cand = chunk.candidates[0]
+        if not cand.grounding_metadata:
+            return citations
+            
+        gm = cand.grounding_metadata
+        if not gm.grounding_chunks:
+            return citations
+            
+        for c in gm.grounding_chunks:
+            if c.web and c.web.uri:
+                citations.append({
+                    "source": c.web.title or c.web.uri, 
+                    "url": c.web.uri
+                })
+    except Exception:
+        # Swallow parsing errors during stream to avoid breaking the chat
+        return []
+    return citations
+
 
 @lru_cache(maxsize=1)
 def _get_system_prompt() -> str:
@@ -55,10 +130,18 @@ def _get_system_prompt() -> str:
         print(f"Warning: system_prompt.txt not found at {SYSTEM_PROMPT_PATH}")
         return "You are a helpful assistant."
 
+
+@lru_cache(maxsize=1)
+def _get_cached_client(api_key: str):
+    if genai is None:
+        raise ImportError("The 'google-genai' library is not installed.")
+    return genai.Client(api_key=api_key)
+
+
 def _get_client():
     """
     Factory method to get the GenAI Client instance.
-    Validates API key before creating client.
+    Validates API key before creating (and caching) the client.
     """
     api_key = _get_api_key().strip()
     if not api_key:
@@ -70,21 +153,28 @@ def _get_client():
         raise ValueError(error_msg)
 
     try:
-        return genai.Client(api_key=api_key)
+        return _get_cached_client(api_key)
     except Exception as e:
         print(f"Error creating Gemini client: {e}")
+        # Clear cache on error to avoid poisoning subsequent calls.
+        _get_cached_client.cache_clear()
         raise
 
 
-def _build_stream_config(system_instruction: str, enable_search: bool) -> types.GenerateContentConfig:
+def _build_stream_config(system_instruction: str, enable_search: bool):
+    if types is None:
+        raise ImportError("The 'google-genai' library is not installed.")
+    
+    tools = []
     if enable_search:
-        return types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            tools=[types.Tool(google_search=types.GoogleSearch())],
-            response_modalities=["TEXT"],
-        )
+        # Add Google Search tool.
+        # Note: 'dynamic_retrieval_config' can be used here to force search
+        # by setting threshold to 0.0, but default (dynamic) is usually best.
+        tools = [types.Tool(google_search=types.GoogleSearch())]
+        
     return types.GenerateContentConfig(
         system_instruction=system_instruction,
+        tools=tools if tools else None,
         response_modalities=["TEXT"],
     )
 
@@ -102,13 +192,51 @@ def _should_retry_without_search(exc: Exception) -> bool:
     ]
     return any(marker in msg for marker in retry_markers)
 
-def query_gemini_stream(message, history=None):
+
+def _extract_text_from_chunk(chunk) -> str:
+    try:
+        if chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
+            return chunk.candidates[0].content.parts[0].text or ""
+    except Exception:
+        return ""
+    return ""
+
+
+def _stream_text_and_citations(response_stream, citations_seen: dict[str, dict]):
+    for chunk in response_stream:
+        text = _extract_text_from_chunk(chunk)
+        if text:
+            yield f"data: {json.dumps({'text': text})}\n\n"
+
+        for cit in _extract_citations_from_chunk(chunk):
+            url = cit.get("url")
+            if url and url not in citations_seen:
+                citations_seen[url] = cit
+        
+        # If we have new citations, flush them immediately to the UI
+        # (Optimized to send batches if multiple come in one chunk)
+        if citations_seen:
+             # We send the whole list so the UI can de-dupe or replace
+            yield f"data: {json.dumps({'citations': list(citations_seen.values())})}\n\n"
+
+
+def query_gemini_stream(message, history=None, documents=None):
     """
     Generates a streaming response from Gemini with Google Search grounding.
     Yields SSE-formatted JSON strings.
     """
-    client = _get_client()
+    if types is None:
+        yield f"data: {json.dumps({'text': '**Configuration Error:** The google-genai library is not installed.'})}\n\n"
+        yield "data: [DONE]\n\n"
+        return
     
+    try:
+        client = _get_client()
+    except Exception as e:
+        yield f"data: {json.dumps({'text': f'**Configuration Error:** {str(e)}'})}\n\n"
+        yield "data: [DONE]\n\n"
+        return
+
     contents = []
     if history:
         for msg in history:
@@ -119,10 +247,20 @@ def query_gemini_stream(message, history=None):
     
     contents.append(types.Content(role="user", parts=[types.Part(text=message)]))
 
-    system_instruction = _get_system_prompt()
+    base_system_instruction = _get_system_prompt()
+    doc_context = _format_documents(documents)
+    
+    # Updated prompt injection to be more explicit about using the tools provided
+    system_instruction = (
+        base_system_instruction
+        + ("\n\n" + doc_context if doc_context else "")
+        + "\n\nIMPORTANT: Use Google Search grounding when enabled so the UI can show reliable Sources."
+    )
 
     model_name = _get_model_name()
     enable_search = _google_search_enabled()
+
+    citations_seen: dict[str, dict] = {}
 
     try:
         response_stream = client.models.generate_content_stream(
@@ -131,38 +269,26 @@ def query_gemini_stream(message, history=None):
             config=_build_stream_config(system_instruction, enable_search),
         )
 
-        for chunk in response_stream:
-            if chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
-                text = chunk.candidates[0].content.parts[0].text
-                if text:
-                    yield f"data: {json.dumps({'text': text})}\n\n"
-            
-            # Handle citations if they appear in the chunk (usually last chunk)
-            if chunk.candidates and chunk.candidates[0].grounding_metadata:
-                 # Re-use logic from _process_response but adapted for stream
-                 citations = []
-                 gm = chunk.candidates[0].grounding_metadata
-                 if gm.grounding_chunks:
-                     for c in gm.grounding_chunks:
-                         if c.web:
-                             citations.append({"source": c.web.title, "url": c.web.uri})
-                 if citations:
-                     yield f"data: {json.dumps({'citations': citations})}\n\n"
-    except errors.ClientError as e:
+        for payload in _stream_text_and_citations(response_stream, citations_seen):
+            yield payload
+
+    except Exception as e:
         # Retry without google_search if tooling is rejected.
-        print(f"Gemini API ClientError: {e}")
+        print(f"Gemini API Error: {e}")
+        
         if enable_search and _should_retry_without_search(e):
             try:
+                print(f"Retrying {model_name} without search tools...")
                 response_stream = client.models.generate_content_stream(
                     model=model_name,
                     contents=contents,
                     config=_build_stream_config(system_instruction, enable_search=False),
                 )
-                for chunk in response_stream:
-                    if chunk.candidates and chunk.candidates[0].content and chunk.candidates[0].content.parts:
-                        text = chunk.candidates[0].content.parts[0].text
-                        if text:
-                            yield f"data: {json.dumps({'text': text})}\n\n"
+                for payload in _stream_text_and_citations(response_stream, citations_seen):
+                    yield payload
+
+                # Let the UI know we had to disable search grounding for this request.
+                yield f"data: {json.dumps({'text': '\n\n_Note: Google Search grounding was unavailable for this request; responding without live web grounding._'})}\n\n"
                 yield "data: [DONE]\n\n"
                 return
             except Exception as retry_exc:
@@ -171,23 +297,23 @@ def query_gemini_stream(message, history=None):
         if "RESOURCE_EXHAUSTED" in str(e):
             error_msg = "Quota exceeded. Please try again shortly."
         elif "NOT_FOUND" in str(e) or "not found" in str(e).lower():
-            error_msg = f"Model '{model_name}' not available. Set GEMINI_MODEL to a valid model name."
+            error_msg = f"Model '{model_name}' not available. Verify GEMINI_MODEL."
         else:
-            error_msg = "Could not reach Gemini service. Verify GEMINI_API_KEY and try again."
+            error_msg = f"Gemini Service Error: {str(e)}"
 
         yield f"data: {json.dumps({'text': f'\n\n**Error:** {error_msg}'})}\n\n"
-    except Exception as e:
-        print(f"Gemini API Unexpected Error: {e}")
-        yield f"data: {json.dumps({'text': '\n\n**Error:** AI service error. Check Vercel logs and GEMINI_API_KEY.'})}\n\n"
 
-    yield "data: [DONE]\n\n"
 
 def analyze_document(content, filename):
     """
     Analyzes a document and returns JSON with analysis and checklist.
     Matches the signature expected by Server.py.
     """
-    client = _get_client()
+    try:
+        client = _get_client()
+    except Exception as e:
+        return {"summary": "Configuration error.", "checklist": [], "risks": str(e)}
+
     model_name = _get_model_name()
     prompt = f"""
     Analyze the following document ({filename}) for clarity, tone, and compliance with Finnish bureaucratic standards.
@@ -215,7 +341,7 @@ def analyze_document(content, filename):
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 response_mime_type="application/json"
-            )
+            ) if types else None
         )
     except Exception as e:
         print(f"Error calling Gemini API: {e}")

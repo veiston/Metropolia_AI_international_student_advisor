@@ -54,6 +54,7 @@ def ask():
 
     user_query = data.get('query')
     history = data.get('history', [])
+    documents = data.get('documents', [])
 
     if not user_query:
         return jsonify({"error": "No query provided"}), 400
@@ -65,9 +66,15 @@ def ask():
     if not isinstance(history, list):
         return jsonify({"error": "History must be an array"}), 400
 
+    # Validate documents format
+    if documents is None:
+        documents = []
+    if not isinstance(documents, list):
+        return jsonify({"error": "Documents must be an array"}), 400
+
     try:
         return Response(
-            stream_with_context(gemini.query_gemini_stream(user_query, history)),
+            stream_with_context(gemini.query_gemini_stream(user_query, history, documents)),
             mimetype='text/event-stream',
         )
     except ValueError as e:
@@ -119,8 +126,28 @@ def upload_doc():
     if not content:
         return jsonify({"error": "Could not extract text from file"}), 400
 
+    # Return some document text to the frontend so it can be included in chat context.
+    # Keep it bounded to avoid huge payloads.
+    MAX_RETURN_CHARS = 20000
+    doc_text = content
+    truncated = False
+    if len(doc_text) > MAX_RETURN_CHARS:
+        doc_text = doc_text[:MAX_RETURN_CHARS]
+        truncated = True
+
     try:
         analysis = gemini.analyze_document(content, filename)
-        return jsonify(analysis)
+        response_payload: dict[str, object]
+        if isinstance(analysis, dict):
+            response_payload = dict(analysis)
+        else:
+            response_payload = {"summary": str(analysis)}
+
+        response_payload["document"] = {
+            "name": filename,
+            "text": doc_text,
+            "truncated": truncated,
+        }
+        return jsonify(response_payload)
     except Exception:
         return jsonify({"error": "AI analysis failed"}), 500

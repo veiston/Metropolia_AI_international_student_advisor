@@ -19,23 +19,29 @@ A specialized AI assistant designed to guide international students through the 
 
 ## 🛠️ Tech Stack
 
-- **AI Engine**: Google Gemini API
-- **Backend**: Python / Flask
-- **Frontend**: Next.js / TypeScript
+- **AI Engine**: Google Gemini API with Search Grounding
+- **Backend**: Python / Flask (Vercel serverless-compatible under `/api`)
+- **Frontend**: Next.js 16 / TypeScript + Tailwind CSS 4
 
 ## ⚡ Quick Start
 
-### Backend (Flask)
-1. Install dependencies: `pip install -r requirements.txt`
-2. Create a `.env` (or set env vars) with your `GEMINI_API_KEY`.
-3. Run Flask using the Vercel-compatible entrypoint:
-	- `python -m flask --app api.index run --port 5000 --debug`
+Prerequisites: Node 18+, Python 3.10+, a `GEMINI_API_KEY`, and (optional) the Vercel CLI if you prefer `vercel dev`.
+
+### Backend (Flask under `/api`)
+1. Install dependencies: `pip install -r requirements.txt`.
+2. Set `GEMINI_API_KEY` in your shell (or `.env`).
+3. Run the API locally: `python -m flask --app api.index run --port 5000 --debug`.
 
 ### Frontend (Next.js)
-1. Install dependencies: `npm install`
-2. Run: `npm run dev`
+1. Install dependencies: `npm install`.
+2. When running the Flask server separately, point the UI to it: `set NEXT_PUBLIC_API_BASE=http://localhost:5000` (Windows) or `export NEXT_PUBLIC_API_BASE=http://localhost:5000` (macOS/Linux).
+3. Start the app: `npm run dev` (opens on http://localhost:3000).
 
-Note: the frontend calls the API via relative paths like `/api/ask` and `/api/upload-doc`.
+### One-command local dev (Windows)
+- `local-dev-start.bat` starts both servers in two terminals. Be sure `GEMINI_API_KEY` (and `NEXT_PUBLIC_API_BASE` if you override the default) are set before running it.
+
+### Alternative: Vercel-style local run
+- If you have the Vercel CLI installed, `vercel dev` will run the Next.js frontend and the Python serverless functions together so `/api/*` routes are automatically proxied.
 
 ---
 

@@ -8,6 +8,8 @@ import ToolsSidebar from './components/ToolsSidebar';
 import { ThemeProvider, useTheme } from './components/ThemeProvider';
 import { ChecklistPayload, DocumentContext, Message } from './types';
 
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || '').replace(/\/$/, '');
+
 function HomeContent() {
   const { darkMode, toggleDarkMode, theme } = useTheme();
   const [query, setQuery] = useState('');
@@ -37,7 +39,7 @@ function HomeContent() {
     setQuery('');
 
     try {
-      const res = await fetch('/api/ask', {
+      const res = await fetch(`${API_BASE}/api/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: userMsg.content, history: history, documents }),
@@ -113,7 +115,7 @@ function HomeContent() {
 
     try {
       setUploadProgress(30);
-      const res = await fetch('/api/upload-doc', {
+      const res = await fetch(`${API_BASE}/api/upload-doc`, {
         method: 'POST',
         body: formData,
       });

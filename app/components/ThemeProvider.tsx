@@ -52,17 +52,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             input: darkMode
                 ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400'
                 : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500',
-            subtleText: darkMode ? 'text-slate-300' : 'text-gray-500',
+            subtleText: darkMode ? 'text-slate-400' : 'text-gray-500',
             badge: darkMode
-                ? 'border-orange-400/60 bg-orange-500/10 text-orange-200'
-                : 'border-orange-200 bg-orange-50 text-orange-700',
-            headingText: darkMode ? 'text-slate-100' : 'text-gray-800',
+                ? 'border-slate-600 bg-slate-800/50 text-slate-300'
+                : 'border-gray-300 bg-gray-100 text-gray-700',
+            headingText: darkMode ? 'text-slate-100 font-bold' : 'text-gray-900 font-bold',
             bodyText: darkMode ? 'text-slate-200' : 'text-gray-600',
             linkCard: darkMode
                 ? 'border border-slate-700 bg-slate-900/40 hover:bg-slate-900/60'
                 : 'border border-gray-200 bg-white hover:shadow-md',
             linkCardTitle: darkMode ? 'text-slate-100' : 'text-gray-800',
-            linkCardMeta: darkMode ? 'text-slate-300' : 'text-gray-500',
+            linkCardMeta: darkMode ? 'text-slate-400' : 'text-gray-500',
             progressTrack: darkMode ? 'bg-slate-700' : 'bg-gray-200',
         };
 

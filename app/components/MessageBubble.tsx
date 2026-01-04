@@ -9,6 +9,26 @@ interface Props {
     showSources: boolean;
 }
 
+// Helper to extract domain from URL or clean up raw API URLs
+function cleanCitationUrl(url: string): { display: string; title: string } {
+    try {
+        // If it's a vertexaisearch internal URL, extract source info
+        if (url.includes('vertexaisearch')) {
+            const parsed = new URL(url);
+            const params = new URLSearchParams(parsed.search);
+            // Try to get a meaningful title from URL params or default
+            const title = params.get('q') || 'Search Result';
+            return { display: title.substring(0, 50), title };
+        }
+        const urlObj = new URL(url);
+        const domain = urlObj.hostname || 'Source';
+        return { display: domain, title: domain };
+    } catch {
+        // If URL is malformed, show truncated version
+        return { display: url.substring(0, 40), title: url };
+    }
+}
+
 export default function MessageBubble({ msg, showSources }: Props) {
     const { theme, darkMode } = useTheme();
     const isUser = msg.role === 'user';
@@ -28,18 +48,18 @@ export default function MessageBubble({ msg, showSources }: Props) {
                 </div>
 
                 {msg.steps ? (
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-4 space-y-3">
                         {msg.steps.map((step, sIdx) => (
                             <div
                                 key={sIdx}
-                                className={`p-3 rounded-lg border-l-4 border-orange-500 shadow-sm text-sm ${darkMode ? 'bg-slate-900/50 border border-slate-700 text-slate-100' : 'bg-white'
+                                className={`p-4 rounded-lg border-l-4 border-orange-500 shadow-sm text-sm ${darkMode ? 'bg-slate-900/50 border border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-300'
                                     }`}
                             >
-                                <div className="font-bold text-orange-600">
+                                <div className={`font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
                                     {step.title}{' '}
-                                    {step.urgency ? <span className="text-red-500 text-xs">({step.urgency})</span> : null}
+                                    {step.urgency ? <span className="text-red-500 text-xs ml-2">({step.urgency})</span> : null}
                                 </div>
-                                <div>{step.description}</div>
+                                <div className={`mt-2 ${darkMode ? 'text-slate-200' : 'text-gray-700'}`}>{step.description}</div>
                             </div>
                         ))}
                     </div>
@@ -50,8 +70,8 @@ export default function MessageBubble({ msg, showSources }: Props) {
                         <button
                             onClick={() => setSourcesExpanded(!sourcesExpanded)}
                             className={`w-full flex items-center gap-2 mb-2 p-2 rounded-lg transition-colors ${darkMode
-                                    ? 'hover:bg-slate-800 text-slate-200'
-                                    : 'hover:bg-gray-100 text-gray-600'
+                                ? 'hover:bg-slate-800 text-slate-200'
+                                : 'hover:bg-gray-100 text-gray-600'
                                 }`}
                         >
                             <span role="img" aria-label="sources">📚</span>
@@ -63,26 +83,28 @@ export default function MessageBubble({ msg, showSources }: Props) {
 
                         {(sourcesExpanded || visibleCitations.length > 0) && (
                             <div className="space-y-2">
-                                {visibleCitations.map((cit, cIdx) => (
-                                    <a
-                                        key={cIdx}
-                                        href={cit.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={`flex flex-col rounded-lg p-3 shadow-sm transition ${theme.linkCard}`}
-                                    >
-                                        <span className="text-xs uppercase tracking-wide text-orange-600">{cit.source}</span>
-                                        <span className={`text-[13px] font-medium break-words ${theme.linkCardTitle}`}>{cit.content || cit.url}</span>
-                                        <span className={`text-[11px] mt-1 ${theme.linkCardMeta}`}>{cit.url}</span>
-                                    </a>
-                                ))}
+                                {visibleCitations.map((cit, cIdx) => {
+                                    const cleaned = cleanCitationUrl(cit.url);
+                                    return (
+                                        <a
+                                            key={cIdx}
+                                            href={cit.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`block rounded-lg p-3 shadow-sm transition hover:shadow-md ${theme.linkCard}`}
+                                        >
+                                            <span className="text-xs uppercase tracking-wide font-semibold text-gray-600 dark:text-slate-400">{cleaned.display}</span>
+                                            <span className={`text-sm font-medium block mt-1 break-words max-w-full ${theme.linkCardTitle}`}>{cit.content || cleaned.title}</span>
+                                        </a>
+                                    );
+                                })}
 
                                 {hasMoreSources && !sourcesExpanded && (
                                     <button
                                         onClick={() => setSourcesExpanded(true)}
                                         className={`w-full mt-2 p-2 text-sm font-medium rounded-lg transition-colors ${darkMode
-                                                ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                             }`}
                                     >
                                         Show {msg.citations.length - 3} more source{msg.citations.length - 3 !== 1 ? 's' : ''}

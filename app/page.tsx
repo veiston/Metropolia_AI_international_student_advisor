@@ -181,9 +181,20 @@ function HomeContent() {
             </div>
             <button
               onClick={toggleDarkMode}
-              className={`rounded-full px-3 py-1 text-sm font-semibold transition ${'bg-orange-500 text-white'}`}
+              className={`p-2 rounded-lg transition-colors ${darkMode
+                ? 'bg-slate-800 text-yellow-300 hover:bg-slate-700'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              title={darkMode ? 'Switch to Light mode' : 'Switch to Dark mode'}
             >
-              {darkMode ? 'Light mode' : 'Dark mode'}
+              {darkMode ? (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.536l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.121-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm5.657-9.193a1 1 0 00-1.414 0l-.707.707A1 1 0 005.05 6.464l.707-.707a1 1 0 001.414-1.414zM5 11a1 1 0 100-2H4a1 1 0 100 2h1z" clipRule="evenodd" />
+                </svg>
+              )}
             </button>
           </header>
         </div>
@@ -224,19 +235,19 @@ function HomeContent() {
                     </button>
                   </div>
                 )}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-4">
                   {messages.length === 0 && (
                     <div className="text-center mt-6 sm:mt-10 md:mt-16">
                       <h2 className={`text-xl sm:text-2xl font-bold ${theme.headingText} mb-2 sm:mb-3`}>Welcome to Metropolia!</h2>
                       <p className={`${theme.bodyText} mb-4 sm:mb-6`}>Ask me anything about student life in Finland</p>
                       <div className="space-y-2 max-w-md mx-auto">
-                        <div className={`border rounded-lg p-3 text-sm text-left ${darkMode ? 'bg-slate-800/60 border-orange-400/40' : 'bg-orange-50 border-orange-200'}`}>
-                          <span className="text-orange-500 font-semibold">Try: </span>
-                          <span className={darkMode ? 'text-slate-100' : 'text-gray-800'}>&quot;How do I apply for a residence permit?&quot;</span>
+                        <div className={`border rounded-lg p-4 text-sm text-left ${darkMode ? 'bg-slate-800/60 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+                          <span className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-800'}`}>Try: </span>
+                          <span className={darkMode ? 'text-slate-200' : 'text-gray-700'}>&quot;How do I apply for a residence permit?&quot;</span>
                         </div>
-                        <div className={`border rounded-lg p-3 text-sm text-left ${darkMode ? 'bg-slate-800/60 border-orange-400/40' : 'bg-orange-50 border-orange-200'}`}>
-                          <span className="text-orange-500 font-semibold">Try: </span>
-                          <span className={darkMode ? 'text-slate-100' : 'text-gray-800'}>&quot;What is the YTHS healthcare fee?&quot;</span>
+                        <div className={`border rounded-lg p-4 text-sm text-left ${darkMode ? 'bg-slate-800/60 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+                          <span className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-gray-800'}`}>Try: </span>
+                          <span className={darkMode ? 'text-slate-200' : 'text-gray-700'}>&quot;What is the YTHS healthcare fee?&quot;</span>
                         </div>
                       </div>
                     </div>
@@ -255,25 +266,25 @@ function HomeContent() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <div className={`flex-shrink-0 p-4 border-t ${theme.divider} ${darkMode ? 'bg-slate-900/60' : 'bg-white'}`}>
-                  <div className="flex gap-2">
+                <div className={`flex-shrink-0 p-6 border-t ${theme.divider} ${darkMode ? 'bg-slate-900/60' : 'bg-white'}`}>
+                  <div className="flex gap-3">
                     <input
                       type="text"
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAsk()}
                       placeholder="Ask a question..."
-                      className={`flex-1 p-3 border-2 rounded-xl focus:outline-none focus:border-orange-500 transition-colors ${theme.input}`}
+                      className={`flex-1 p-3 sm:p-4 border-2 rounded-xl focus:outline-none focus:border-orange-500 transition-colors ${theme.input}`}
                     />
                     <button
                       onClick={handleAsk}
                       disabled={loading}
-                      className="bg-orange-500 text-white px-4 sm:px-6 py-3 rounded-xl hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-sm hover:shadow-md"
+                      className="bg-orange-500 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-sm hover:shadow-md"
                     >
                       Send
                     </button>
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                  <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
                     <label className="flex items-center gap-2 cursor-pointer hover:text-orange-600 transition-colors">
                       <input
                         type="checkbox"

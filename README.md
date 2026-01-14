@@ -1,5 +1,6 @@
 # Metropolia AI International Student Advisor 🌍🇫🇮
-![Status](https://img.shields.io/badge/Status-Prototype-orange) ![Stack](https://img.shields.io/badge/Stack-Next.js_16_%7C_Python_Flask-blue) ![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Prototype-orange) ![Stack](https://img.shields.io/badge/Stack-Next.js_16_%7C_Python_Flask-blue) ![License](https://img.shields.io/badge/License-AGPL_v3-blue)
+
 This is a specialised AI assistant designed to guide international students through the complexities of Finnish **bureaucracy** and **student life**. It was built for **Metropolia** University of Applied Sciences as a **prototype project**.
 
 <img width="957" height="908" alt="Screenshot from 2026-01-14 22-21-41" src="https://github.com/user-attachments/assets/71e303e2-53a8-401e-a239-c9199c238175" />

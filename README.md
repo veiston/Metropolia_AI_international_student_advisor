@@ -1,18 +1,18 @@
-# Metropolia AI International Student Advisor 🌍🇫🇮
+# Metropolia AI International Student Advisor 🌍
 ![Status](https://img.shields.io/badge/Status-Prototype-orange) ![Stack](https://img.shields.io/badge/Stack-Next.js_16_%7C_Python_Flask-blue) ![License](https://img.shields.io/badge/License-AGPL_v3-blue)
 
 This is a specialised AI assistant designed to guide international students through the complexities of Finnish **bureaucracy** and **student life**. It was built for **Metropolia** University of Applied Sciences as a **prototype project**.
 
 <img width="957" height="908" alt="Screenshot from 2026-01-14 22-21-41" src="https://github.com/user-attachments/assets/71e303e2-53a8-401e-a239-c9199c238175" />
 
-## 🚀 Features
+## Features
 
 - **Grounded Intelligence**: Uses Google Search Grounding to provide real-time, fact-checked answers from **selected sources** (Migri, Kela, YTHS, HUS, Metropolia).
 - **Document Analysis**: Upload official letters or forms to receive instant summaries and actionable checklists.
 - **Transparent Citations**: Every claim is cross-checked on the official institutional sites and backed by clickable sources.
 - **Modern UI**: Responsive interface built with Next.js.
 
-## 🎓 Benefits for Metropolia Students
+## Benefits for Metropolia Students
 
 - **Reduced Workload**: Automates repetitive questions about permits, housing, and healthcare.
 - **Student stress reduction**: Helps alleviate anxiety by providing clear, reliable information. There's no stupid questions!
@@ -20,16 +20,16 @@ This is a specialised AI assistant designed to guide international students thro
 - **Consistent Information**: Ensures all students receive standardized, up-to-date guidance based on official sources.
 - **Language Support**: Breaks down language barriers by explaining bureocracy and student life in the language of the user.
 
-## ⚠️ Important Disclaimer
+## ⚠️ Disclaimer
 This tool is still in the prototyping phase. It may produce inaccurate results. Users are solely responsible for verifying facts with official sources (migri.fi, kela.fi, metropolia.fi). The developer assumes no liability for actions taken based on this information.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **AI**: Google Gemini API with Search Grounding
 - **Backend `/api`**: Python / Flask
 - **Frontend `/app`**: Next.js 16 / TypeScript + Tailwind CSS 4
 
-## ⚡ Quick Start
+## Quick Start
 
 ### Prerequisites
 * Node.js 18+
@@ -53,7 +53,7 @@ This tool is still in the prototyping phase. It may produce inaccurate results. 
 
 ---
 
-**Thank you for checking out my project!** 🌍🇫🇮
+**Thank you for checking out my project!** 🌍
 
 If you have any questions or need further assistance, feel free to reach out.
 

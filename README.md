@@ -1,6 +1,6 @@
-# Metropolia AI International Student Advisor 🌍🇫🇮
+# AI Metropolia Student Advisor 🌍🇫🇮
 
-A specialized AI assistant designed to guide international students through the complexities of Finnish bureaucracy and student life. Built for Metropolia University of Applied Sciences.
+A specialized AI assistant designed to guide students through the complexities of Finnish bureaucracy and student life. Built for Metropolia University of Applied Sciences.
 
 ## 🚀 Features
 
@@ -45,7 +45,7 @@ Prerequisites: Node 18+, Python 3.10+, a `GEMINI_API_KEY`, and (optional) the Ve
 
 ---
 
-**Thank you for checking out my Metropolia AI International Student Advisor!** 🌍🇫🇮
+**Thank you for checking out my Metropolia AI Student Advisor!** 🌍🇫🇮
 
 If you have any questions or need further assistance, feel free to reach out.
 

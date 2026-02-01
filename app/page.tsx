@@ -177,7 +177,7 @@ function HomeContent() {
                 />
               </div>
               <div className="border-l-2 border-orange-500 pl-3 sm:pl-4">
-                <h1 className="text-lg sm:text-2xl font-bold">Metropolia international student advisor 🌍🇫🇮</h1>
+                <h1 className="text-lg sm:text-2xl font-bold">Metropolia student advisor 🌍🇫🇮</h1>
                 <p className={`hidden sm:block text-sm ${theme.bodyText}`}>Your personalized assistant for student life in Finland and Metropolia</p>
               </div>
             </div>

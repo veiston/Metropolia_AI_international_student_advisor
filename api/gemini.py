@@ -1,6 +1,8 @@
 import os
 import json
 from functools import lru_cache
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
 
@@ -90,6 +92,67 @@ def _format_documents(documents) -> str:
     return "\n".join(parts)
 
 
+def _looks_like_generic_title(title: str | None) -> bool:
+    if not title:
+        return True
+    t = title.strip().lower()
+    return t in {"web source", "source", ""}
+
+
+def _hostname_label(url: str) -> str:
+    try:
+        parsed = urlparse(url)
+        host = (parsed.hostname or "").lower()
+        if host.startswith("www."):
+            host = host[4:]
+        return host or "Source"
+    except Exception:
+        return "Source"
+
+
+def _is_vertex_grounding_redirect(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+        host = (parsed.hostname or "").lower()
+        return "vertexaisearch.cloud.google.com" in host and "/grounding-api-redirect/" in (parsed.path or "")
+    except Exception:
+        return False
+
+
+@lru_cache(maxsize=256)
+def _resolve_grounding_redirect(url: str) -> str:
+    """Resolve the Vertex AI Search grounding redirect URL to its final destination.
+
+    This keeps the UI citations human-friendly. Uses short timeouts and falls back
+    to the original URL on any failure.
+    """
+    if not url or not _is_vertex_grounding_redirect(url):
+        return url
+
+    # Try HEAD first (cheap). If not supported, fall back to a tiny GET.
+    try:
+        req = Request(url, method="HEAD", headers={"User-Agent": "metropolia-student-advisor/1.0"})
+        with urlopen(req, timeout=2) as resp:
+            final_url = resp.geturl() or url
+            return final_url
+    except Exception:
+        try:
+            req = Request(
+                url,
+                method="GET",
+                headers={
+                    "User-Agent": "metropolia-student-advisor/1.0",
+                    # Ask for the smallest possible payload.
+                    "Range": "bytes=0-0",
+                },
+            )
+            with urlopen(req, timeout=2) as resp:
+                final_url = resp.geturl() or url
+                return final_url
+        except Exception:
+            return url
+
+
 def _extract_citations_from_chunk(chunk) -> list[dict]:
     """
     Extracts citation metadata from a streaming chunk.
@@ -111,9 +174,16 @@ def _extract_citations_from_chunk(chunk) -> list[dict]:
             
         for c in gm.grounding_chunks:
             if c.web and c.web.uri:
+                resolved_url = _resolve_grounding_redirect(c.web.uri)
+                title = c.web.title
+                if _looks_like_generic_title(title):
+                    title = _hostname_label(resolved_url)
                 citations.append({
-                    "source": c.web.title or c.web.uri, 
-                    "url": c.web.uri
+                    # Keep backward compatibility with existing frontend expectations.
+                    "source": title or resolved_url,
+                    "content": title or resolved_url,
+                    "url": resolved_url,
+                    "original_url": c.web.uri,
                 })
     except Exception:
         # Swallow parsing errors during stream to avoid breaking the chat

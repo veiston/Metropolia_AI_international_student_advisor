@@ -2,6 +2,7 @@ export interface Citation {
     source: string;
     url: string;
     content?: string;
+    original_url?: string;
 }
 
 export interface Step {

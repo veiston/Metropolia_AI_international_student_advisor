@@ -1,7 +1,7 @@
 [project]
 name = "metropolia-advisor"
 version = "0.1.0"
-description = "Backend for Metropolia international student advisor."
+description = "Backend for Metropolia student advisor."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

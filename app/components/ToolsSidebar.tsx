@@ -27,10 +27,10 @@ export default function ToolsSidebar({
     const { theme, darkMode } = useTheme();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const scannerTitleClass = darkMode ? 'text-sky-300' : 'text-sky-700';
+    const scannerTitleClass = darkMode ? 'text-orange-300' : 'text-orange-700';
     const scannerCardClass = darkMode
         ? 'bg-slate-800/70 border-slate-600'
-        : 'bg-white border-sky-100';
+        : 'bg-white border-orange-100';
     const checklistTitleClass = darkMode ? 'text-emerald-300' : 'text-emerald-700';
     const checklistCardClass = darkMode
         ? 'bg-slate-800/70 border-emerald-500/30'
@@ -67,7 +67,7 @@ export default function ToolsSidebar({
                     />
                     <label
                         htmlFor="file-upload"
-                        className="flex-1 cursor-pointer bg-sky-600 hover:bg-sky-700 text-white text-xs sm:text-sm py-2 px-3 sm:px-4 rounded-lg transition-colors text-center"
+                        className="flex-1 cursor-pointer bg-orange-600 hover:bg-orange-700 text-white text-xs sm:text-sm py-2 px-3 sm:px-4 rounded-lg transition-colors text-center"
                     >
                         {file ? file.name : 'Browse files'}
                     </label>
@@ -76,7 +76,7 @@ export default function ToolsSidebar({
                     <button
                         onClick={onSubmit}
                         disabled={loading}
-                        className="mt-2 w-full bg-emerald-600 text-white text-xs sm:text-sm py-2 rounded-lg hover:bg-emerald-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="mt-2 w-full bg-gray-700 text-white text-xs sm:text-sm py-2 rounded-lg hover:bg-gray-800 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Analyze {file.name}
                     </button>
@@ -105,10 +105,10 @@ export default function ToolsSidebar({
                                         </h4>
                                         {item.urgency && (
                                             <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase whitespace-nowrap ${item.urgency.toLowerCase() === 'high'
-                                                    ? (darkMode ? 'bg-red-500/20 text-red-300' : 'bg-red-100 text-red-700')
-                                                    : item.urgency.toLowerCase() === 'medium'
-                                                        ? (darkMode ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-700')
-                                                        : (darkMode ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700')
+                                                ? (darkMode ? 'bg-red-500/20 text-red-300' : 'bg-red-100 text-red-700')
+                                                : item.urgency.toLowerCase() === 'medium'
+                                                    ? (darkMode ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-700')
+                                                    : (darkMode ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700')
                                                 }`}>
                                                 {item.urgency}
                                             </span>

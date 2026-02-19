@@ -148,7 +148,7 @@ export default function MessageBubble({ msg, showSources }: Props) {
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
             <div className={`max-w-[82%] sm:max-w-[85%] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm ${isUser ? theme.bubbleUser : theme.bubbleAssistant}`}>
-                <div className="prose prose-sm max-w-none">
+                <div className="prose prose-sm max-w-none mobile-bubble-text">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                 </div>
 

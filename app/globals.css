@@ -80,3 +80,10 @@ body {
   margin: 0.5rem 0;
   word-wrap: break-word;
 }
+
+@media (max-width: 360px) {
+  .mobile-bubble-text {
+    font-size: 0.9rem;
+    line-height: 1.35rem;
+  }
+}

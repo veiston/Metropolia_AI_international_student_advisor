@@ -164,7 +164,7 @@ function HomeContent() {
     <main className={`flex flex-col h-screen w-full ${theme.page}`}>
       <div className="flex-shrink-0 w-full">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-2 sm:pb-4 pt-2 sm:pt-4">
-          <header className={`rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 ${theme.header}`}>
+          <header className={`relative rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 ${theme.header}`}>
             <div className="flex items-center gap-2.5 sm:gap-4">
               <div className={''}>
                 <Image
@@ -172,18 +172,18 @@ function HomeContent() {
                   alt="Metropolia Logo"
                   width={180}
                   height={60}
-                  className="object-contain h-9 sm:h-14 w-auto"
+                  className="object-contain h-8 sm:h-14 w-auto"
                   priority
                 />
               </div>
               <div className="border-l-2 border-orange-500 pl-2.5 sm:pl-4">
-                <h1 className="text-base sm:text-2xl font-bold leading-tight">Metropolia student advisor 🌍🇫🇮</h1>
+                <h1 className="text-base sm:text-2xl font-bold leading-tight max-w-[240px] sm:max-w-none">Metropolia student advisor 🌍🇫🇮</h1>
                 <p className={`hidden sm:block text-sm ${theme.bodyText}`}>Your personalized assistant for student life in Finland and Metropolia</p>
               </div>
             </div>
             <button
               onClick={toggleDarkMode}
-              className={`p-1.5 sm:p-2 rounded-lg transition-colors ${darkMode
+              className={`absolute top-2 right-2 sm:static w-8 h-8 sm:w-auto sm:h-auto inline-flex items-center justify-center p-0 sm:p-2 rounded-md sm:rounded-lg transition-colors ${darkMode
                 ? 'bg-slate-800 text-yellow-300 hover:bg-slate-700'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               title={darkMode ? 'Switch to Light mode' : 'Switch to Dark mode'}
@@ -218,7 +218,7 @@ function HomeContent() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as 'chat' | 'tools')}
-                  className={`flex-1 py-2 text-sm font-semibold transition ${activeTab === tab
+                  className={`flex-1 py-1.5 sm:py-2.5 text-sm font-semibold transition ${activeTab === tab
                     ? 'bg-orange-500 text-white'
                     : darkMode
                       ? 'bg-transparent text-slate-200'
@@ -245,9 +245,9 @@ function HomeContent() {
                     </button>
                   </div>
                 )}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-3 sm:space-y-4">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-8 space-y-3 sm:space-y-4">
                   {messages.length === 0 && (
-                    <div className="text-center mt-4 sm:mt-10 md:mt-16">
+                    <div className="text-center mt-2 sm:mt-10 md:mt-16 min-h-full flex flex-col justify-end pb-3 sm:pb-0">
                       <h2 className={`text-lg sm:text-2xl font-bold ${theme.headingText} mb-2 sm:mb-3`}>Welcome to Metropolia!</h2>
                       <p className={`text-sm sm:text-base ${theme.bodyText} mb-3 sm:mb-6`}>Ask me anything about student life in Finland</p>
                       <div className="space-y-2 max-w-md mx-auto">
@@ -276,7 +276,7 @@ function HomeContent() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <div className={`flex-shrink-0 p-3 sm:p-6 border-t ${theme.divider} ${darkMode ? 'bg-slate-900/60' : 'bg-white'}`}>
+                <div className={`sticky bottom-0 flex-shrink-0 p-3 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:pb-6 border-t ${theme.divider} ${darkMode ? 'bg-slate-900/90' : 'bg-white/95'} backdrop-blur-sm`}>
                   <div className="flex items-center gap-2 sm:gap-3">
                     <input
                       type="text"
@@ -289,7 +289,7 @@ function HomeContent() {
                     <button
                       onClick={handleAsk}
                       disabled={loading}
-                      className="shrink-0 whitespace-nowrap bg-orange-500 text-white px-3.5 sm:px-6 py-2.5 sm:py-4 text-sm sm:text-base rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-sm hover:shadow-md"
+                      className="shrink-0 whitespace-nowrap w-[84px] sm:w-auto bg-orange-500 text-white px-3 sm:px-6 py-2.5 sm:py-4 text-sm sm:text-base rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-sm hover:shadow-md"
                     >
                       Send
                     </button>

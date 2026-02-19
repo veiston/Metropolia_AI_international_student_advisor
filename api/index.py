@@ -4,17 +4,13 @@ from werkzeug.utils import secure_filename
 import os
 import sys
 
-# Add parent directory to path for module imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from api import gemini, pdfutils
-    from api.error_handlers import handle_api_error
 except ImportError:
-    # Fallback for Vercel
     import gemini
     import pdfutils
-    from error_handlers import handle_api_error
 
 app = Flask(__name__)
 
@@ -36,7 +32,6 @@ def health():
 
 
 @app.route('/api/ask', methods=['POST'])
-@handle_api_error
 def ask():
     data = request.json
     if not data:
@@ -76,7 +71,6 @@ def ask():
 
 
 @app.route('/api/upload-doc', methods=['POST'])
-@handle_api_error
 def upload_doc():
     # File size validation (10MB limit for Vercel)
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
@@ -116,8 +110,6 @@ def upload_doc():
     if not content:
         return jsonify({"error": "Could not extract text from file"}), 400
 
-    # Return some document text to the frontend so it can be included in chat context.
-    # Keep it bounded to avoid huge payloads.
     MAX_RETURN_CHARS = 20000
     doc_text = content
     truncated = False

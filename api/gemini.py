@@ -283,18 +283,12 @@ def _stream_text_and_citations(response_stream, citations_seen: dict[str, dict])
             if url and url not in citations_seen:
                 citations_seen[url] = cit
         
-        # If we have new citations, flush them immediately to the UI
-        # (Optimized to send batches if multiple come in one chunk)
         if citations_seen:
              # We send the whole list so the UI can de-dupe or replace
             yield f"data: {json.dumps({'citations': list(citations_seen.values())})}\n\n"
 
 
 def query_gemini_stream(message, history=None, documents=None):
-    """
-    Generates a streaming response from Gemini with Google Search grounding.
-    Yields SSE-formatted JSON strings.
-    """
     if types is None:
         yield f"data: {json.dumps({'text': '**Configuration Error:** The google-genai library is not installed.'})}\n\n"
         yield "data: [DONE]\n\n"
@@ -375,10 +369,6 @@ def query_gemini_stream(message, history=None, documents=None):
 
 
 def analyze_document(content, filename):
-    """
-    Analyzes a document and returns JSON with analysis and checklist.
-    Matches the signature expected by Server.py.
-    """
     try:
         client = _get_client()
     except Exception as e:
@@ -386,9 +376,9 @@ def analyze_document(content, filename):
 
     model_name = _get_model_name()
     prompt = f"""
-    Analyze the following document ({filename}) for clarity, tone, and compliance with Finnish bureaucratic standards.
-    Identify any missing information or ambiguous language.
-    Also, extract a checklist of action items if applicable.
+    Analyze the following document ({filename}) for any mistakes, what it is about and what to do with it best.
+    Identify any missing information or ambiguous language or potential pitfalls or traps.
+    Also, extract a checklist of action items if useful (not mandatory).
     
     Document Content:
     {content}
@@ -424,7 +414,6 @@ def analyze_document(content, filename):
     try:
         # Attempt to parse the JSON response
         text_content = response.text or "{}"
-        # Clean up potential Markdown code blocks
         if text_content.startswith("```json"):
             text_content = text_content[7:]
         elif text_content.startswith("```"):

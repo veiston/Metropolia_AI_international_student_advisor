@@ -165,7 +165,7 @@ function HomeContent() {
       <div className="flex-shrink-0 w-full">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-2 sm:pb-4 pt-2 sm:pt-4">
           <header className={`relative rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 ${theme.header}`}>
-            <div className="flex items-center gap-2.5 sm:gap-4">
+            <div className="flex items-center gap-2.5 sm:gap-4 pr-10 sm:pr-0">
               <div className={''}>
                 <Image
                   src={'/Metropolia_logo.png'}
@@ -177,7 +177,9 @@ function HomeContent() {
                 />
               </div>
               <div className="border-l-2 border-orange-500 pl-2.5 sm:pl-4">
-                <h1 className="text-base sm:text-2xl font-bold leading-tight max-w-[240px] sm:max-w-none">Metropolia student advisor 🌍🇫🇮</h1>
+                <h1 className="text-[1.15rem] sm:text-2xl font-semibold leading-snug tracking-normal max-w-[250px] sm:max-w-none">
+                  Metropolia student advisor <span className="inline-block">🌍🇫🇮</span>
+                </h1>
                 <p className={`hidden sm:block text-sm ${theme.bodyText}`}>Your personalized assistant for student life in Finland and Metropolia</p>
               </div>
             </div>
@@ -247,7 +249,7 @@ function HomeContent() {
                 )}
                 <div className="flex-1 overflow-y-auto p-3 sm:p-8 space-y-3 sm:space-y-4">
                   {messages.length === 0 && (
-                    <div className="text-center mt-2 sm:mt-10 md:mt-16 min-h-full flex flex-col justify-end pb-3 sm:pb-0">
+                    <div className="text-center mt-4 sm:mt-10 md:mt-16 min-h-full flex flex-col justify-start pt-6 sm:pt-0">
                       <h2 className={`text-lg sm:text-2xl font-bold ${theme.headingText} mb-2 sm:mb-3`}>Welcome to Metropolia!</h2>
                       <p className={`text-sm sm:text-base ${theme.bodyText} mb-3 sm:mb-6`}>Ask me anything about student life in Finland</p>
                       <div className="space-y-2 max-w-md mx-auto">

@@ -147,17 +147,17 @@ export default function MessageBubble({ msg, showSources }: Props) {
 
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
-            <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${isUser ? theme.bubbleUser : theme.bubbleAssistant}`}>
+            <div className={`max-w-[82%] sm:max-w-[85%] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm ${isUser ? theme.bubbleUser : theme.bubbleAssistant}`}>
                 <div className="prose prose-sm max-w-none">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                 </div>
 
                 {msg.steps ? (
-                    <div className="mt-4 space-y-3">
+                    <div className="mt-3 sm:mt-4 space-y-2.5 sm:space-y-3">
                         {msg.steps.map((step, sIdx) => (
                             <div
                                 key={sIdx}
-                                className={`p-4 rounded-lg border-l-4 border-orange-500 shadow-sm text-sm ${darkMode ? 'bg-slate-900/50 border border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-300'
+                                className={`p-3 sm:p-4 rounded-lg border-l-4 border-orange-500 shadow-sm text-xs sm:text-sm ${darkMode ? 'bg-slate-900/50 border border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-300'
                                     }`}
                             >
                                 <div className={`font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
@@ -171,10 +171,10 @@ export default function MessageBubble({ msg, showSources }: Props) {
                 ) : null}
 
                 {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && showSources ? (
-                    <div className={`mt-3 pt-3 border-t ${darkMode ? 'border-slate-700' : 'border-gray-300'}`}>
+                    <div className={`mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t ${darkMode ? 'border-slate-700' : 'border-gray-300'}`}>
                         <button
                             onClick={() => setSourcesExpanded(!sourcesExpanded)}
-                            className={`w-full flex items-center gap-2 mb-2 p-2 rounded-lg transition-colors ${darkMode
+                            className={`w-full flex items-center gap-2 mb-2 p-1.5 sm:p-2 rounded-lg transition-colors ${darkMode
                                 ? 'hover:bg-slate-800 text-slate-200'
                                 : 'hover:bg-gray-100 text-gray-600'
                                 }`}
@@ -197,11 +197,11 @@ export default function MessageBubble({ msg, showSources }: Props) {
                                             href={cleaned.href}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className={`block rounded-lg p-3 shadow-sm transition hover:shadow-md ${theme.linkCard} w-full break-words`}
+                                            className={`block rounded-lg p-2.5 sm:p-3 shadow-sm transition hover:shadow-md ${theme.linkCard} w-full break-words`}
                                         >
                                             <span className="text-xs uppercase tracking-wide font-semibold text-gray-600 dark:text-slate-400">{cleaned.display}</span>
-                                            <span className={`text-sm font-medium block mt-1 break-words ${theme.linkCardTitle}`}>{title || cleaned.title}</span>
-                                            <span className={`text-[11px] mt-1 break-all ${theme.linkCardMeta}`}>{cleaned.meta}</span>
+                                            <span className={`text-xs sm:text-sm font-medium block mt-1 break-words ${theme.linkCardTitle}`}>{title || cleaned.title}</span>
+                                            <span className={`text-[10px] sm:text-[11px] mt-1 break-all ${theme.linkCardMeta}`}>{cleaned.meta}</span>
                                         </a>
                                     );
                                 })}

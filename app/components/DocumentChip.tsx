@@ -8,7 +8,7 @@ interface Props {
 export default function DocumentChip({ doc }: Props) {
     const { theme } = useTheme();
     return (
-        <span className={`flex items-center gap-1 border px-3 py-1 rounded-full text-sm ${theme.badge}`}>
+        <span className={`flex items-center gap-1 border px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm ${theme.badge}`}>
             ✅ {doc.name}
             {doc.truncated ? ' (truncated)' : ''}
         </span>

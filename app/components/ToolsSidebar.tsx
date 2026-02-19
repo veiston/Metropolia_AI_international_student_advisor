@@ -37,14 +37,14 @@ export default function ToolsSidebar({
 
     return (
         <div
-            className={`${theme.panel} w-full md:w-96 p-4 sm:p-6 border-l overflow-y-auto ${hiddenOnMobile ? 'hidden md:block' : ''} md:sticky md:top-4 md:self-start md:max-h-[calc(100vh-3rem)]`}
+            className={`${theme.panel} w-full md:w-96 p-3 sm:p-6 border-l overflow-y-auto ${hiddenOnMobile ? 'hidden md:block' : ''} md:sticky md:top-4 md:self-start md:max-h-[calc(100vh-3rem)]`}
         >
-            <h2 className={`font-bold text-xl mb-4 flex items-center gap-2 ${theme.headingText}`}>
+            <h2 className={`font-bold text-lg sm:text-xl mb-3 sm:mb-4 flex items-center gap-2 ${theme.headingText}`}>
                 <span role="img" aria-label="tools">🛠️</span> Tools
             </h2>
 
-            <div className={`${theme.card} p-4 rounded-xl shadow-sm mb-4`}>
-                <h3 className="font-semibold mb-2 text-sm text-orange-500 flex items-center gap-1">
+            <div className={`${theme.card} p-3 sm:p-4 rounded-xl shadow-sm mb-3 sm:mb-4`}>
+                <h3 className="font-semibold mb-2 text-xs sm:text-sm text-orange-500 flex items-center gap-1">
                     <span role="img" aria-label="document">📄</span> PDF Document Scanner
                 </h3>
                 <p className={`text-xs mb-3 ${theme.bodyText}`}>Upload admission letter or rental contract for analysis.</p>
@@ -58,7 +58,7 @@ export default function ToolsSidebar({
                     />
                     <label
                         htmlFor="file-upload"
-                        className="flex-1 cursor-pointer bg-orange-500 hover:bg-orange-800 text-white text-sm py-2 px-4 rounded-lg transition-colors text-center"
+                        className="flex-1 cursor-pointer bg-orange-500 hover:bg-orange-800 text-white text-xs sm:text-sm py-2 px-3 sm:px-4 rounded-lg transition-colors text-center"
                     >
                         {file ? file.name : 'Browse files'}
                     </label>
@@ -67,7 +67,7 @@ export default function ToolsSidebar({
                     <button
                         onClick={onSubmit}
                         disabled={loading}
-                        className="mt-2 w-full bg-orange-500 text-white text-sm py-2 rounded-lg hover:bg-orange-800 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="mt-2 w-full bg-orange-500 text-white text-xs sm:text-sm py-2 rounded-lg hover:bg-orange-800 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Analyze {file.name}
                     </button>

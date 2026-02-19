@@ -2,7 +2,7 @@
 
 A specialized AI assistant designed to guide international students through the complexities of Finnish bureaucracy and student life. Built for Metropolia University of Applied Sciences.
 
-<img width="602" height="552" alt="Näyttökuva 2026-02-19 022928" src="https://github.com/user-attachments/assets/a0a34f1f-4b09-4f3f-beeb-e8d5344270fd" />
+<img width="956" height="955" alt="Näyttökuva 2026-02-19 022703" src="https://github.com/user-attachments/assets/5677be4e-abcd-4111-b9a7-f2078f833ef9" />
 
 ## Features
 

@@ -412,7 +412,7 @@ def analyze_document(content, filename):
         }
     
     try:
-        # Attempt to parse the JSON response
+        # Parse the JSON response
         text_content = response.text or "{}"
         if text_content.startswith("```json"):
             text_content = text_content[7:]

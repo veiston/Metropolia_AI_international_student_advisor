@@ -45,7 +45,7 @@ export default function ToolsSidebar({
 
             <div className={`${theme.card} p-4 rounded-xl shadow-sm mb-4`}>
                 <h3 className="font-semibold mb-2 text-sm text-orange-500 flex items-center gap-1">
-                    <span role="img" aria-label="document">📄</span> Document Scanner
+                    <span role="img" aria-label="document">📄</span> PDF Document Scanner
                 </h3>
                 <p className={`text-xs mb-3 ${theme.bodyText}`}>Upload admission letter or rental contract for analysis.</p>
                 <div className="flex gap-2">

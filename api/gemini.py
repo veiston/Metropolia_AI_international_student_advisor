@@ -376,21 +376,39 @@ def analyze_document(content, filename):
 
     model_name = _get_model_name()
     prompt = f"""
-    Analyze the following document ({filename}) for any mistakes, what it is about and what to do with it best.
-    Identify any missing information or ambiguous language or potential pitfalls or traps.
-    Also, extract a checklist of action items if useful (not mandatory).
-    
-    Document Content:
-    {content}
-    
-    Output the result as a JSON object with the following keys:
-    - "summary": A brief summary of the document.
-    - "checklist": A list of objects, each with:
-        - "title": Short title of the action item.
-        - "description": Detailed description.
-        - "urgency": "High", "Medium", or "Low".
-    - "risks": A string identifying any missing info or risks.
-    """
+        You are reviewing a student document: {filename}
+
+        Assume the sender is a university student who needs practical guidance to complete, answer, or submit this document correctly.
+        Focus on actionable next steps, not generic explanation.
+
+        Analyze the document and extract:
+        1) What this document is for (short, concrete summary).
+        2) Exact actions the student should take next.
+        3) Missing information, deadlines, submission risks, and common mistakes.
+
+        Document content:
+        {content}
+
+        Return STRICT JSON with this schema:
+        {{
+            "summary": "2-4 sentence summary explaining what the student is expected to do with this document.",
+            "checklist": [
+                {{
+                    "title": "Imperative action title (e.g., 'Fill personal details section').",
+                    "description": "Concrete instruction with what to fill/prepare, where to submit, and how to verify completion.",
+                    "urgency": "High|Medium|Low"
+                }}
+            ],
+            "risks": "Concise warning about missing fields, deadlines, or rejection/penalty risks."
+        }}
+
+        Rules:
+        - Provide 4-8 checklist items whenever the document contains enough information.
+        - Each checklist item must be specific and doable by a student.
+        - Prefer wording like "Do X", "Fill Y", "Submit Z".
+        - If a field name appears in the document, mention it explicitly.
+        - Do not include markdown, prose outside JSON, or code fences.
+        """
     
     system_instruction = _get_system_prompt()
 
@@ -421,7 +439,54 @@ def analyze_document(content, filename):
         if text_content.endswith("```"):
             text_content = text_content[:-3]
         
-        return json.loads(text_content.strip())
+        parsed = json.loads(text_content.strip())
+
+        if not isinstance(parsed, dict):
+            raise ValueError("Parsed analysis is not a JSON object")
+
+        summary = parsed.get("summary")
+        risks = parsed.get("risks")
+        raw_checklist = parsed.get("checklist")
+
+        normalized_items = []
+        if isinstance(raw_checklist, list):
+            for item in raw_checklist:
+                if not isinstance(item, dict):
+                    continue
+                title = str(item.get("title") or "").strip()
+                description = str(item.get("description") or "").strip()
+                urgency_raw = str(item.get("urgency") or "Medium").strip().lower()
+
+                if not title and description:
+                    title = "Next step"
+                if not description:
+                    continue
+
+                if urgency_raw == "high":
+                    urgency = "High"
+                elif urgency_raw == "low":
+                    urgency = "Low"
+                else:
+                    urgency = "Medium"
+
+                normalized_items.append({
+                    "title": title or "Next step",
+                    "description": description,
+                    "urgency": urgency,
+                })
+
+        if not normalized_items and isinstance(summary, str) and summary.strip():
+            normalized_items = [{
+                "title": "Read instructions and prepare required information",
+                "description": "Review the document carefully, identify required fields, and gather missing details before submission.",
+                "urgency": "High",
+            }]
+
+        return {
+            "summary": str(summary or "").strip(),
+            "checklist": normalized_items,
+            "risks": str(risks or "").strip(),
+        }
     except Exception as e:
         print(f"Error parsing JSON from analyze_document: {e}")
         # Fallback

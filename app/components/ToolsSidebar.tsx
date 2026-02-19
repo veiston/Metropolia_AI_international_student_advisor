@@ -67,7 +67,7 @@ export default function ToolsSidebar({
                     />
                     <label
                         htmlFor="file-upload"
-                        className="flex-1 cursor-pointer bg-orange-600 hover:bg-orange-700 text-white text-xs sm:text-sm py-2 px-3 sm:px-4 rounded-lg transition-colors text-center"
+                        className="flex-1 cursor-pointer bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm py-2 px-3 sm:px-4 rounded-lg transition-colors text-center"
                     >
                         {file ? file.name : 'Browse files'}
                     </label>

@@ -1,4 +1,4 @@
-# Metropolia AI International Student Advisor 🌍🇫🇮
+# Metropolia AI International Student Advisor 🌍🇫🇮 (UNOFFICIAL)
 
 A specialized AI assistant designed to guide international students through the complexities of Finnish bureaucracy and student life. Built for Metropolia University of Applied Sciences.
 
@@ -18,7 +18,7 @@ A specialized AI assistant designed to guide international students through the 
 - **Language Support**: Breaks down language barriers by explaining bureocracy and student life in the language of the user.
 
 ## ⚠️ Disclaimer
-This tool is still in the prototyping phase. It may produce inaccurate results. Users are solely responsible for verifying facts with official sources (migri.fi, kela.fi, metropolia.fi). The developer assumes no liability for actions taken based on this information.
+This is a UNOFFICIAL tool and is unaffiliated with the actual Metropolia. This tool is still in the prototyping phase. It may produce inaccurate results. Users are solely responsible for verifying facts with official sources (migri.fi, kela.fi, metropolia.fi). The developer assumes no liability for actions taken based on this information.
 
 ## Tech Stack
 

@@ -12,6 +12,12 @@ const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || '').replace(/\/$/, '');
 
 function HomeContent() {
   const { darkMode, toggleDarkMode, theme } = useTheme();
+  const tabs: Array<'chat' | 'tools'> = ['chat', 'tools'];
+  const welcomePrompts = [
+    'How do I apply for a residence permit?',
+    'What is the YTHS healthcare fee?',
+  ];
+  const loadingDelays = ['0s', '0.2s', '0.4s'];
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,6 +29,10 @@ function HomeContent() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const addAssistantMessage = (content: string) => {
+    setMessages(prev => [...prev, { role: 'assistant', content }]);
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
@@ -31,7 +41,7 @@ function HomeContent() {
     if (!query.trim()) return;
 
     const userMsg: Message = { role: 'user', content: query };
-    const history = messages.map(m => ({ role: m.role, content: m.content }));
+    const history = messages.map(({ role, content }) => ({ role, content }));
 
     setMessages(prev => [...prev, userMsg]);
     setActiveTab('chat');
@@ -42,7 +52,7 @@ function HomeContent() {
       const res = await fetch(`${API_BASE}/api/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: userMsg.content, history: history, documents }),
+        body: JSON.stringify({ query: userMsg.content, history, documents }),
       });
 
       if (!res.ok) {
@@ -55,6 +65,13 @@ function HomeContent() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       const botMsg: Message = { role: 'assistant', content: '', citations: [] };
+      const syncBotMessage = () => {
+        setMessages(prev => {
+          const next = [...prev];
+          next[next.length - 1] = { ...botMsg };
+          return next;
+        });
+      };
 
       setMessages(prev => [...prev, botMsg]);
 
@@ -72,22 +89,16 @@ function HomeContent() {
 
             try {
               const data = JSON.parse(dataStr);
+              let changed = false;
               if (data.text) {
                 botMsg.content += data.text;
-                setMessages(prev => {
-                  const newMsgs = [...prev];
-                  newMsgs[newMsgs.length - 1] = { ...botMsg };
-                  return newMsgs;
-                });
+                changed = true;
               }
               if (data.citations) {
                 botMsg.citations = data.citations;
-                setMessages(prev => {
-                  const newMsgs = [...prev];
-                  newMsgs[newMsgs.length - 1] = { ...botMsg };
-                  return newMsgs;
-                });
+                changed = true;
               }
+              if (changed) syncBotMessage();
             } catch (e) {
               console.error('Error parsing SSE data', e);
             }
@@ -97,10 +108,7 @@ function HomeContent() {
     } catch (error) {
       console.error('API Error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Error connecting to server';
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `⚠️ ${errorMsg}. Please check that the API key is configured and try again.`
-      }]);
+      addAssistantMessage(`⚠️ ${errorMsg}. Please check that the API key is configured and try again.`);
     } finally {
       setLoading(false);
     }
@@ -133,25 +141,16 @@ function HomeContent() {
 
       const { document: uploadedDocument, ...rest } = data as { document?: DocumentContext } & ChecklistPayload;
       if (uploadedDocument) {
-        setDocuments(prev => {
-          const filtered = prev.filter(doc => doc.name !== uploadedDocument.name);
-          return [...filtered, uploadedDocument];
-        });
+        setDocuments(prev => [...prev.filter(doc => doc.name !== uploadedDocument.name), uploadedDocument]);
       }
       setChecklist(rest);
       setActiveTab('chat');
       setUploadProgress(100);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `Analyzed ${file.name}. See the generated checklist below.`
-      }]);
+      addAssistantMessage(`Analyzed ${file.name}. See the generated checklist below.`);
     } catch (error) {
       console.error('Upload Error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Error uploading file';
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `⚠️ ${errorMsg}`
-      }]);
+      addAssistantMessage(`⚠️ ${errorMsg}`);
       setUploadProgress(100);
     } finally {
       setLoading(false);
@@ -163,21 +162,21 @@ function HomeContent() {
   return (
     <main className={`flex flex-col h-screen w-full ${theme.page}`}>
       <div className="flex-shrink-0 w-full">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-2 sm:pb-4 pt-2 sm:pt-4">
-          <header className={`relative rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 ${theme.header}`}>
-            <div className="flex items-center gap-2.5 sm:gap-4 pr-10 sm:pr-0">
-              <div className={''}>
+        <div className="max-w-6xl mx-auto px-2 sm:px-4 pb-2 sm:pb-4 pt-2 sm:pt-4">
+          <header className={`relative rounded-lg sm:rounded-2xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 ${theme.header}`}>
+            <div className="flex items-center gap-2 sm:gap-4 pr-10 sm:pr-0">
+              <div>
                 <Image
                   src={'/Metropolia_logo.png'}
                   alt="Metropolia Logo"
                   width={180}
                   height={60}
-                  className="object-contain h-8 sm:h-14 w-auto"
+                  className="object-contain h-8 sm:h-12 w-auto"
                   priority
                 />
               </div>
               <div className="border-l-2 border-orange-500 pl-2.5 sm:pl-4">
-                <h1 className="text-[1.15rem] sm:text-2xl font-semibold leading-snug tracking-normal max-w-[250px] sm:max-w-none">
+                <h1 className="text-base sm:text-2xl font-semibold leading-snug tracking-normal max-w-[240px] sm:max-w-none">
                   Metropolia student advisor <span className="inline-block">🌍🇫🇮</span>
                 </h1>
                 <p className={`hidden sm:block text-sm ${theme.bodyText}`}>Your personalized assistant for student life in Finland and Metropolia</p>
@@ -216,11 +215,11 @@ function HomeContent() {
         <div className="max-w-6xl h-full mx-auto px-3 sm:px-4 pb-3 sm:pb-4 flex flex-col">
           <div className={`shadow-xl rounded-xl sm:rounded-2xl overflow-hidden flex flex-col h-full ${theme.container}`}>
             <div className={`md:hidden flex border-b ${theme.divider}`}>
-              {['chat', 'tools'].map(tab => (
+              {tabs.map(tab => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab as 'chat' | 'tools')}
-                  className={`flex-1 py-1.5 sm:py-2.5 text-sm font-semibold transition ${activeTab === tab
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-1 py-2 sm:py-2.5 text-sm font-semibold transition ${activeTab === tab
                     ? 'bg-orange-500 text-white'
                     : darkMode
                       ? 'bg-transparent text-slate-200'
@@ -233,9 +232,9 @@ function HomeContent() {
             </div>
 
             <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-              <div className={`flex-1 flex flex-col md:border-r ${theme.divider} ${activeTab === 'tools' ? 'hidden md:flex' : ''}`}>
+              <div className={`flex-1 flex flex-col md:border-r ${theme.divider} ${activeTab === 'tools' ? 'hidden md:flex' : ''} min-h-0`}>
                 {documents.length > 0 && (
-                  <div className={`flex-shrink-0 flex flex-wrap gap-1.5 sm:gap-2 p-3 sm:p-4 border-b ${theme.divider} text-xs sm:text-sm ${darkMode ? 'bg-gray-900/70' : 'bg-white/80'}`}>
+                  <div className={`flex-shrink-0 flex flex-wrap gap-1 sm:gap-2 p-2.5 sm:p-4 border-b ${theme.divider} text-xs sm:text-sm ${darkMode ? 'bg-gray-900/70' : 'bg-white/80'}`}>
                     {documents.map((doc, idx) => (
                       <DocumentChip key={idx} doc={doc} />
                     ))}
@@ -247,20 +246,18 @@ function HomeContent() {
                     </button>
                   </div>
                 )}
-                <div className="flex-1 overflow-y-auto p-3 sm:p-8 space-y-3 sm:space-y-4">
+                <div className="flex-1 overflow-y-auto p-2.5 sm:p-8 space-y-2.5 sm:space-y-4">
                   {messages.length === 0 && (
-                    <div className="text-center mt-4 sm:mt-10 md:mt-16 min-h-full flex flex-col justify-start pt-6 sm:pt-0">
-                      <h2 className={`text-lg sm:text-2xl font-bold ${theme.headingText} mb-2 sm:mb-3`}>Welcome to Metropolia!</h2>
-                      <p className={`text-sm sm:text-base ${theme.bodyText} mb-3 sm:mb-6`}>Ask me anything about student life in Finland</p>
-                      <div className="space-y-2 max-w-md mx-auto">
-                        <div className={`border rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-left ${darkMode ? 'bg-slate-800/60 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
-                          <span className="font-semibold text-orange-500">Try: </span>
-                          <span className={darkMode ? 'text-slate-200' : 'text-gray-700'}>&quot;How do I apply for a residence permit?&quot;</span>
-                        </div>
-                        <div className={`border rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-left ${darkMode ? 'bg-slate-800/60 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
-                          <span className="font-semibold text-orange-500">Try: </span>
-                          <span className={darkMode ? 'text-slate-200' : 'text-gray-700'}>&quot;What is the YTHS healthcare fee?&quot;</span>
-                        </div>
+                    <div className="text-center mt-2 sm:mt-10 md:mt-16 min-h-full flex flex-col justify-start pt-3 sm:pt-0">
+                      <h2 className={`text-lg sm:text-2xl font-bold ${theme.headingText} mb-1.5 sm:mb-3`}>Welcome to Metropolia!</h2>
+                      <p className={`text-sm sm:text-base ${theme.bodyText} mb-2.5 sm:mb-6`}>Ask me anything about student life in Finland</p>
+                      <div className="space-y-1.5 max-w-md mx-auto px-2">
+                        {welcomePrompts.map((prompt) => (
+                          <div key={prompt} className={`border rounded-lg p-2.5 sm:p-4 text-sm sm:text-sm text-left ${darkMode ? 'bg-slate-800/60 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+                            <span className="font-semibold text-orange-500">Try: </span>
+                            <span className={darkMode ? 'text-slate-200' : 'text-gray-700'}>&quot;{prompt}&quot;</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -269,9 +266,13 @@ function HomeContent() {
                   ))}
                   {loading && (
                     <div className="flex items-center gap-2 text-gray-500 text-xs sm:text-sm">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      {loadingDelays.map((delay) => (
+                        <div
+                          key={delay}
+                          className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"
+                          style={{ animationDelay: delay }}
+                        />
+                      ))}
                       <span>Thinking...</span>
                     </div>
                   )}
@@ -285,13 +286,13 @@ function HomeContent() {
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAsk()}
-                      placeholder="Ask a question..."
-                      className={`min-w-0 flex-1 px-3 sm:px-4 py-2.5 sm:py-4 text-base border-2 rounded-xl focus:outline-none focus:border-orange-500 transition-colors ${theme.input}`}
+                      placeholder="Ask..."
+                      className={`min-w-0 flex-1 px-3 sm:px-4 py-2.5 sm:py-4 text-sm sm:text-base border-2 rounded-lg sm:rounded-xl focus:outline-none focus:border-orange-500 transition-colors ${theme.input}`}
                     />
                     <button
                       onClick={handleAsk}
                       disabled={loading}
-                      className="shrink-0 whitespace-nowrap w-[84px] sm:w-auto bg-orange-500 text-white px-3 sm:px-6 py-2.5 sm:py-4 text-sm sm:text-base rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-sm hover:shadow-md"
+                      className="shrink-0 whitespace-nowrap px-3.5 sm:px-6 py-2.5 sm:py-4 text-sm sm:text-base bg-orange-500 text-white rounded-lg sm:rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-sm hover:shadow-md"
                     >
                       Send
                     </button>
@@ -302,7 +303,7 @@ function HomeContent() {
                         type="checkbox"
                         checked={showSources}
                         onChange={(e) => setShowSources(e.target.checked)}
-                        className="rounded text-orange-500 focus:ring-orange-500"
+                        className="rounded text-orange-500 focus:ring-orange-500 w-4 h-4"
                       />
                       Show Sources
                     </label>

@@ -138,56 +138,55 @@ export default function MessageBubble({ msg, showSources }: Props) {
     const { theme, darkMode } = useTheme();
     const isUser = msg.role === 'user';
     const [sourcesExpanded, setSourcesExpanded] = useState(false);
+    const citations = msg.citations ?? [];
+    const hasSources = msg.role === 'assistant' && showSources && citations.length > 0;
 
-    const visibleCitations = msg.citations && msg.citations.length > 0
-        ? (sourcesExpanded ? msg.citations : msg.citations.slice(0, 3))
-        : [];
-
-    const hasMoreSources = msg.citations && msg.citations.length > 3;
+    const visibleCitations = sourcesExpanded ? citations : citations.slice(0, 3);
+    const hasMoreSources = citations.length > 3;
 
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
-            <div className={`max-w-[82%] sm:max-w-[85%] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm ${isUser ? theme.bubbleUser : theme.bubbleAssistant}`}>
-                <div className="prose prose-sm max-w-none mobile-bubble-text">
+            <div className={`max-w-[85%] rounded-lg sm:rounded-2xl p-2.5 sm:p-4 shadow-sm ${isUser ? theme.bubbleUser : theme.bubbleAssistant}`}>
+                <div className="prose prose-sm max-w-none mobile-bubble-text text-sm sm:text-base">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                 </div>
 
                 {msg.steps ? (
-                    <div className="mt-3 sm:mt-4 space-y-2.5 sm:space-y-3">
+                    <div className="mt-2.5 sm:mt-4 space-y-2 sm:space-y-3">
                         {msg.steps.map((step, sIdx) => (
                             <div
                                 key={sIdx}
-                                className={`p-3 sm:p-4 rounded-lg border-l-4 border-orange-500 shadow-sm text-xs sm:text-sm ${darkMode ? 'bg-slate-900/50 border border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-300'
+                                className={`p-2.5 sm:p-4 rounded-md sm:rounded-lg border-l-4 border-orange-500 shadow-sm text-xs sm:text-sm ${darkMode ? 'bg-slate-900/50 border border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-300'
                                     }`}
                             >
-                                <div className={`font-bold ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                                <div className={`font-bold text-xs sm:text-sm ${darkMode ? 'text-slate-100' : 'text-gray-900'}`}>
                                     {step.title}{' '}
-                                    {step.urgency ? <span className="text-red-500 text-xs ml-2">({step.urgency})</span> : null}
+                                    {step.urgency ? <span className="text-red-500 text-xs ml-1 sm:ml-2">({step.urgency})</span> : null}
                                 </div>
-                                <div className={`mt-2 ${darkMode ? 'text-slate-200' : 'text-gray-700'}`}>{step.description}</div>
+                                <div className={`mt-1.5 sm:mt-2 text-xs sm:text-xs ${darkMode ? 'text-slate-200' : 'text-gray-700'}`}>{step.description}</div>
                             </div>
                         ))}
                     </div>
                 ) : null}
 
-                {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && showSources ? (
-                    <div className={`mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t ${darkMode ? 'border-slate-700' : 'border-gray-300'}`}>
+                {hasSources ? (
+                    <div className={`mt-2 sm:mt-3 pt-2 sm:pt-3 border-t ${darkMode ? 'border-slate-700' : 'border-gray-300'}`}>
                         <button
                             onClick={() => setSourcesExpanded(!sourcesExpanded)}
-                            className={`w-full flex items-center gap-2 mb-2 p-1.5 sm:p-2 rounded-lg transition-colors ${darkMode
+                            className={`w-full flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 p-1 sm:p-2 rounded-md sm:rounded-lg text-xs sm:text-sm transition-colors ${darkMode
                                 ? 'hover:bg-slate-800 text-slate-200'
                                 : 'hover:bg-gray-100 text-gray-600'
                                 }`}
                         >
                             <span role="img" aria-label="sources">📚</span>
-                            <span className="font-semibold">Sources {msg.citations.length > 0 && `(${msg.citations.length})`}</span>
-                            <span className={`ml-auto text-sm transition-transform ${sourcesExpanded ? 'rotate-180' : ''}`}>
+                            <span className="font-semibold">Sources ({citations.length})</span>
+                            <span className={`ml-auto text-xs sm:text-sm transition-transform ${sourcesExpanded ? 'rotate-180' : ''}`}>
                                 ▼
                             </span>
                         </button>
 
                         {(sourcesExpanded || visibleCitations.length > 0) && (
-                            <div className="space-y-2">
+                            <div className="space-y-1.5 sm:space-y-2">
                                 {visibleCitations.map((cit, cIdx) => {
                                     const title = cit.content || cit.source;
                                     const cleaned = cleanCitationUrl(cit.url, title);
@@ -197,11 +196,11 @@ export default function MessageBubble({ msg, showSources }: Props) {
                                             href={cleaned.href}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className={`block rounded-lg p-2.5 sm:p-3 shadow-sm transition hover:shadow-md ${theme.linkCard} w-full break-words`}
+                                            className={`block rounded-md sm:rounded-lg p-1.5 sm:p-3 shadow-sm transition hover:shadow-md ${theme.linkCard} w-full break-words`}
                                         >
-                                            <span className="text-xs uppercase tracking-wide font-semibold text-gray-600 dark:text-slate-400">{cleaned.display}</span>
-                                            <span className={`text-xs sm:text-sm font-medium block mt-1 break-words ${theme.linkCardTitle}`}>{title || cleaned.title}</span>
-                                            <span className={`text-[10px] sm:text-[11px] mt-1 break-all ${theme.linkCardMeta}`}>{cleaned.meta}</span>
+                                            <span className="text-xs sm:text-xs uppercase tracking-wide font-semibold text-gray-600 dark:text-slate-400">{cleaned.display}</span>
+                                            <span className={`text-xs sm:text-sm font-medium block mt-0.5 sm:mt-1 break-words ${theme.linkCardTitle}`}>{title || cleaned.title}</span>
+                                            <span className={`text-[10px] sm:text-[11px] mt-0.5 sm:mt-1 break-all ${theme.linkCardMeta}`}>{cleaned.meta}</span>
                                         </a>
                                     );
                                 })}
@@ -209,12 +208,12 @@ export default function MessageBubble({ msg, showSources }: Props) {
                                 {hasMoreSources && !sourcesExpanded && (
                                     <button
                                         onClick={() => setSourcesExpanded(true)}
-                                        className={`w-full mt-2 p-2 text-sm font-medium rounded-lg transition-colors ${darkMode
+                                        className={`w-full mt-1.5 sm:mt-2 p-2 sm:p-2 text-xs sm:text-sm font-medium rounded-md sm:rounded-lg transition-colors ${darkMode
                                             ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                             }`}
                                     >
-                                        Show {msg.citations.length - 3} more source{msg.citations.length - 3 !== 1 ? 's' : ''}
+                                        Show {citations.length - 3} more source{citations.length - 3 !== 1 ? 's' : ''}
                                     </button>
                                 )}
                             </div>

@@ -10,7 +10,7 @@ export default function UploadProgress({ progress }: Props) {
     return (
         <div className={`mt-1.5 sm:mt-3 h-1.5 sm:h-2 rounded-full overflow-hidden ${theme.progressTrack}`}>
             <div
-                className="h-full bg-gradient-to-r from-orange-500 to-orange-700 transition-all"
+                className="h-full bg-linear-to-r from-orange-500 to-orange-700 transition-all"
                 style={{ width: `${progress}%` }}
             />
         </div>

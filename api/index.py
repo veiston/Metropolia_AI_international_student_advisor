@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
-import sys
 import gemini
 import pdfutils
 
@@ -100,7 +99,12 @@ def upload_doc():
     doc_text = content[:MAX_RETURN_CHARS]
 
     try:
-        analysis = gemini.analyze_document(content, filename)
+        mime_type = "application/pdf" if file_ext == '.pdf' else None
+        analysis = gemini.analyze_document(
+            file_content if file_ext == '.pdf' else content,
+            filename,
+            mime_type
+        )
         response_payload: dict[str, object]
         if isinstance(analysis, dict):
             response_payload = dict(analysis)

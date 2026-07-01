@@ -2,10 +2,8 @@ import os
 import json
 from functools import lru_cache
 from urllib.parse import urlparse
-from urllib.request import Request, urlopen
 from google import genai
 from google.genai import types, errors
-
 from dotenv import load_dotenv
 
 # Serverless-friendly configuration
@@ -92,49 +90,6 @@ def _hostname_label(url: str) -> str:
         return "Source"
 
 
-def _is_vertex_grounding_redirect(url: str) -> bool:
-    try:
-        parsed = urlparse(url)
-        host = (parsed.hostname or "").lower()
-        return "vertexaisearch.cloud.google.com" in host and "/grounding-api-redirect/" in (parsed.path or "")
-    except Exception:
-        return False
-
-
-@lru_cache(maxsize=256)
-def _resolve_grounding_redirect(url: str) -> str:
-    """Resolve the Vertex AI Search grounding redirect URL to its final destination.
-
-    This keeps the UI citations human-friendly. Uses short timeouts and falls back
-    to the original URL on any failure.
-    """
-    if not url or not _is_vertex_grounding_redirect(url):
-        return url
-
-    # Try HEAD first (cheap). If not supported, fall back to a tiny GET.
-    try:
-        req = Request(url, method="HEAD", headers={"User-Agent": "metropolia-student-advisor/1.0"})
-        with urlopen(req, timeout=2) as resp:
-            final_url = resp.geturl() or url
-            return final_url
-    except Exception:
-        try:
-            req = Request(
-                url,
-                method="GET",
-                headers={
-                    "User-Agent": "metropolia-student-advisor/1.0",
-                    # Ask for the smallest possible payload.
-                    "Range": "bytes=0-0",
-                },
-            )
-            with urlopen(req, timeout=2) as resp:
-                final_url = resp.geturl() or url
-                return final_url
-        except Exception:
-            return url
-
-
 def _extract_citations_from_chunk(chunk) -> list[dict]:
     """
     Extracts citation metadata from a streaming chunk.
@@ -156,7 +111,7 @@ def _extract_citations_from_chunk(chunk) -> list[dict]:
             
         for c in gm.grounding_chunks:
             if c.web and c.web.uri:
-                resolved_url = _resolve_grounding_redirect(c.web.uri)
+                resolved_url = c.web.uri
                 title = c.web.title
                 if _looks_like_generic_title(title):
                     title = _hostname_label(resolved_url)
@@ -190,10 +145,7 @@ def _get_cached_client(api_key: str):
 
 
 def _get_client():
-    """
-    Factory method to get the GenAI Client instance.
-    Validates API key before creating (and caching) the client.
-    """
+    """AI client instance and validate api key"""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         error_msg = (
@@ -218,9 +170,6 @@ def _build_stream_config(system_instruction: str, enable_search: bool):
     
     tools = []
     if enable_search:
-        # Add Google Search tool.
-        # Note: 'dynamic_retrieval_config' can be used here to force search
-        # by setting threshold to 0.0, but default (dynamic) is usually best.
         tools = [types.Tool(google_search=types.GoogleSearch())]
         
     return types.GenerateContentConfig(
@@ -232,7 +181,6 @@ def _build_stream_config(system_instruction: str, enable_search: bool):
 
 def _should_retry_without_search(exc: Exception) -> bool:
     msg = str(exc)
-    # Be conservative: only retry on common “tool not allowed / invalid argument” types of failures.
     retry_markers = [
         "INVALID_ARGUMENT",
         "google_search",
@@ -295,7 +243,6 @@ def query_gemini_stream(message, history=None, documents=None):
     base_system_instruction = _get_system_prompt()
     doc_context = _format_documents(documents)
     
-    # Updated prompt injection to be more explicit about using the tools provided
     system_instruction = (
         base_system_instruction
         + ("\n\n" + doc_context if doc_context else "")
@@ -318,7 +265,7 @@ def query_gemini_stream(message, history=None, documents=None):
             yield payload
 
     except Exception as e:
-        # Retry without google_search if tooling is rejected.
+        # Retry without google_search if tool call is rejected.
         print(f"Gemini API Error: {e}")
         
         if enable_search and _should_retry_without_search(e):
@@ -332,7 +279,7 @@ def query_gemini_stream(message, history=None, documents=None):
                 for payload in _stream_text_and_citations(response_stream, citations_seen):
                     yield payload
 
-                # Let the UI know we had to disable search grounding for this request.
+                # Let the UI people know we had to disable search grounding for this request.
                 yield f"data: {json.dumps({'text': '\n\n_Note: Google Search grounding was unavailable for this request; responding without live web grounding._'})}\n\n"
                 yield "data: [DONE]\n\n"
                 return
@@ -349,43 +296,36 @@ def query_gemini_stream(message, history=None, documents=None):
         yield f"data: {json.dumps({'text': f'\n\n**Error:** {error_msg}'})}\n\n"
 
 
-def analyze_document(content, filename):
+def analyze_document(content, filename, mime_type=None):
     try:
         client = _get_client()
     except Exception as e:
         return {"summary": "Configuration error.", "checklist": [], "risks": str(e)}
 
     model_name = _get_model_name()
+    
+    if mime_type == "application/pdf":
+        input_part = types.Part.from_bytes(data=content, mime_type=mime_type)
+        doc_content_instruction = "Analyze the attached PDF document."
+        contents = [input_part]
+    else:
+        doc_content_instruction = f"Document content:\n{content}"
+        contents = []
+
     prompt = f"""
-        You are reviewing a student document: {filename}
+        You are reviewing a document submitted by a Metropolia student: {filename}
 
         Assume the sender is a university student who needs practical guidance to complete, answer, or submit this document correctly.
         Focus on actionable next steps, not generic explanation.
 
-        Analyze the document and extract:
+        Analyze the document and extract when useful:
         1) What this document is for (short, concrete summary).
         2) Exact actions the student should take next.
         3) Missing information, deadlines, submission risks, and common mistakes.
 
-        Document content:
-        {content}
+        {doc_content_instruction}
 
-        Return STRICT JSON with this schema:
-        {{
-            "summary": "2-4 sentence summary explaining what the student is expected to do with this document.",
-            "checklist": [
-                {{
-                    "title": "Imperative action title (e.g., 'Fill personal details section').",
-                    "description": "Concrete instruction with what to fill/prepare, where to submit, and how to verify completion.",
-                    "urgency": "High|Medium|Low"
-                }}
-            ],
-            "risks": "Concise warning about missing fields, deadlines, or rejection/penalty risks."
-        }}
-
-        Rules:
-        - Provide 4-8 checklist items whenever the document contains enough information.
-        - Each checklist item must be specific and doable by a student.
+        Evaluate the students and the documents goals. Try to help the student as much as possible.
         - Prefer wording like "Do X", "Fill Y", "Submit Z".
         - If a field name appears in the document, mention it explicitly.
         - Do not include markdown, prose outside JSON, or code fences.
@@ -394,9 +334,10 @@ def analyze_document(content, filename):
     system_instruction = _get_system_prompt()
 
     try:
+        contents.append(prompt)
         response = client.models.generate_content(
             model=model_name,
-            contents=prompt,
+            contents=contents,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 response_mime_type="application/json"

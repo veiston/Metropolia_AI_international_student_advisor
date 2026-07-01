@@ -161,7 +161,7 @@ function HomeContent() {
 
   return (
     <main className={`flex flex-col h-screen w-full ${theme.page}`}>
-      <div className="flex-shrink-0 w-full">
+      <div className="shrink-0 w-full">
         <div className="max-w-6xl mx-auto px-2 sm:px-4 pb-2 sm:pb-4 pt-2 sm:pt-4">
           <header className={`relative rounded-lg sm:rounded-2xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 ${theme.header}`}>
             <div className="flex items-center gap-2 sm:gap-4 pr-10 sm:pr-0">

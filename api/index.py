@@ -3,14 +3,8 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
 import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-try:
-    from api import gemini, pdfutils
-except ImportError:
-    import gemini
-    import pdfutils
+import gemini
+import pdfutils
 
 app = Flask(__name__)
 

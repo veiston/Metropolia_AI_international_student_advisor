@@ -3,29 +3,20 @@ import json
 from functools import lru_cache
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
+from google import genai
+from google.genai import types, errors
 
 from dotenv import load_dotenv
 
 # Serverless-friendly configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Only load .env in development (Vercel uses environment variables directly)
+# Only load .env in development (not in vercel)
 if not os.getenv("VERCEL"):
     env_path = os.path.join(BASE_DIR, ".env")
     if os.path.exists(env_path):
         load_dotenv(env_path)
 
-# Import Google AI client (google-genai)
-try:
-    from google import genai
-    from google.genai import types, errors
-except ImportError as e:
-    print(f"Error importing google.genai: {e}")
-    # We do not raise immediately to allow the file to be imported for type checking,
-    # but runtime calls will fail if this is missing.
-    genai = None
-    types = None
-    errors = None
 
 SYSTEM_PROMPT_PATH = os.path.join(BASE_DIR, "system_prompt.txt")
 
@@ -35,18 +26,9 @@ def _truthy_env(var_name: str) -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
-def _get_api_key() -> str:
-    # Support a couple of common env var names to reduce deployment footguns.
-    return (
-        os.getenv("GEMINI_API_KEY")
-        or os.getenv("GOOGLE_API_KEY")
-        or ""
-    )
-
-
 def _get_model_name() -> str:
-    # Defaults to 2.5-flash as requested, but can be overridden by env var.
-    return (os.getenv("GEMINI_MODEL") or "gemini-2.5-flash").strip()
+    # Defaults to 3.5-flash as , but can be overridden by env var.
+    return (os.getenv("GEMINI_MODEL") or "gemini-3.5-flash").strip()
 
 
 def _google_search_enabled() -> bool:
@@ -179,7 +161,6 @@ def _extract_citations_from_chunk(chunk) -> list[dict]:
                 if _looks_like_generic_title(title):
                     title = _hostname_label(resolved_url)
                 citations.append({
-                    # Keep backward compatibility with existing frontend expectations.
                     "source": title or resolved_url,
                     "content": title or resolved_url,
                     "url": resolved_url,
@@ -213,7 +194,7 @@ def _get_client():
     Factory method to get the GenAI Client instance.
     Validates API key before creating (and caching) the client.
     """
-    api_key = _get_api_key().strip()
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         error_msg = (
             "Gemini API Key is missing or empty. "

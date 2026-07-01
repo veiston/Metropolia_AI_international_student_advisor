@@ -56,4 +56,4 @@ This is a UNOFFICIAL tool and is unaffiliated with the actual Metropolia. This t
 
 If you have any questions or need further assistance, feel free to reach out.
 
-— **Veikka Liukkonen**
+— **Veikka**

@@ -334,7 +334,7 @@ def analyze_document(content, filename, mime_type=None):
     system_instruction = _get_system_prompt()
 
     try:
-        contents.append(prompt)
+        contents.append(types.Part(text=prompt))
         response = client.models.generate_content(
             model=model_name,
             contents=contents,

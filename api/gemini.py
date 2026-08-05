@@ -9,11 +9,26 @@ from dotenv import load_dotenv
 # Serverless-friendly configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
+def _load_environment() -> None:
+    if os.getenv("VERCEL"):
+        return
+
+    candidate_paths = [
+        os.path.join(BASE_DIR, ".env"),
+        os.path.join(BASE_DIR, "..", ".env"),
+        os.path.join(BASE_DIR, "..", "..", ".env"),
+        os.path.join(os.getcwd(), ".env"),
+    ]
+
+    for env_path in candidate_paths:
+        if os.path.exists(env_path):
+            load_dotenv(env_path, override=False)
+            return
+
+
 # Only load .env in development (not in vercel)
-if not os.getenv("VERCEL"):
-    env_path = os.path.join(BASE_DIR, ".env")
-    if os.path.exists(env_path):
-        load_dotenv(env_path)
+_load_environment()
 
 
 SYSTEM_PROMPT_PATH = os.path.join(BASE_DIR, "system_prompt.txt")

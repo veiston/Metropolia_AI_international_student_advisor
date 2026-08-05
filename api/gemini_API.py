@@ -3,7 +3,7 @@ import json
 from functools import lru_cache
 from urllib.parse import urlparse
 from google import genai
-from google.genai import types, errors
+from google.genai import types
 from dotenv import load_dotenv
 
 # Serverless-friendly configuration
@@ -162,14 +162,11 @@ def _get_cached_client(api_key: str):
 def _get_client():
     """AI client instance and validate api key"""
     api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        error_msg = (
-            "Gemini API Key is missing or empty. "
-            "Set GEMINI_API_KEY (recommended) in Vercel Project → Settings → Environment Variables."
-        )
-        print(f"ERROR: {error_msg}")
+    error_msg = 'Error, no GEMINI_API_KEY provided'
+    if not api_key: 
+        print(error_msg)
         raise ValueError(error_msg)
-
+    
     try:
         return _get_cached_client(api_key)
     except Exception as e:
@@ -180,9 +177,6 @@ def _get_client():
 
 
 def _build_stream_config(system_instruction: str, enable_search: bool):
-    if types is None:
-        raise ImportError("The 'google-genai' library is not installed.")
-    
     tools = []
     if enable_search:
         tools = [types.Tool(google_search=types.GoogleSearch())]

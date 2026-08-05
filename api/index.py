@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
-import gemini
+import gemini_API
 import pdfutils
 
 app = Flask(__name__)
@@ -57,7 +57,7 @@ def ask():
 
     try:
         return Response(
-            stream_with_context(gemini.query_gemini_stream(user_query, history, documents)),
+            stream_with_context(gemini_API.query_gemini_stream(user_query, history, documents)),
             mimetype='text/event-stream',
         )
     except ValueError as e:
@@ -100,7 +100,7 @@ def upload_doc():
 
     try:
         mime_type = "application/pdf" if file_ext == '.pdf' else None
-        analysis = gemini.analyze_document(
+        analysis = gemini_API.analyze_document(
             file_content if file_ext == '.pdf' else content,
             filename,
             mime_type

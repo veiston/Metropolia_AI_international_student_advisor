@@ -1,5 +1,7 @@
 @echo off
 
+cd /d "%~dp0"
+
 REM Starts Flask (API) and Next.js (frontend) for local development.
 REM Flask entrypoint is api/index.py (Vercel serverless-compatible).
 

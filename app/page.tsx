@@ -11,7 +11,7 @@ import { ChecklistPayload, DocumentContext, Message } from './types';
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || '').replace(/\/$/, '');
 
 function HomeContent() {
-  const { darkMode, toggleDarkMode } = useTheme();
+  const { darkMode, toggleDarkMode, theme } = useTheme();
   const tabs: Array<'chat' | 'tools'> = ['chat', 'tools'];
   const welcomePrompts = [
     'How do I apply for a residence permit?',
@@ -26,6 +26,7 @@ function HomeContent() {
   const [checklist, setChecklist] = useState<ChecklistPayload | null>(null);
   const [documents, setDocuments] = useState<DocumentContext[]>([]);
   const [activeTab, setActiveTab] = useState<'chat' | 'tools'>('chat');
+  const [uploadProgress, setUploadProgress] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const addAssistantMessage = (content: string) => {
@@ -74,59 +75,40 @@ function HomeContent() {
 
       setMessages(prev => [...prev, botMsg]);
 
-      let buffer = '';
       while (true) {
         const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
+        if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        const remaining = lines.pop();
-        if (remaining !== undefined) {
-          buffer = remaining;
-        } else {
-          buffer = '';
-        }
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n\n');
 
-        let isDone = false;
         for (const line of lines) {
-          const trimmedLine = line.trim();
-          if (trimmedLine.startsWith('data: ')) {
-            const dataStr = trimmedLine.slice(6).trim();
-            if (dataStr === '[DONE]') {
-              isDone = true;
-              break;
-            }
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            if (dataStr === '[DONE]') break;
 
             try {
               const data = JSON.parse(dataStr);
-              let hasChanged = false;
+              let changed = false;
               if (data.text) {
                 botMsg.content += data.text;
-                hasChanged = true;
+                changed = true;
               }
               if (data.citations) {
                 botMsg.citations = data.citations;
-                hasChanged = true;
+                changed = true;
               }
-              if (hasChanged) {
-                syncBotMessage();
-              }
+              if (changed) syncBotMessage();
             } catch (e) {
               console.error('Error parsing SSE data', e);
             }
           }
         }
-
-        if (isDone) {
-          break;
-        }
       }
     } catch (error) {
+      console.error('API Error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Error connecting to server';
-      addAssistantMessage(`⚠️ ${errorMsg}`);
+      addAssistantMessage(`⚠️ ${errorMsg}. Please check that the API key is configured and try again.`);
     } finally {
       setLoading(false);
     }
@@ -135,39 +117,52 @@ function HomeContent() {
   const submitFile = async () => {
     if (!file) return;
     setLoading(true);
+    setUploadProgress(10);
     const formData = new FormData();
     formData.append('file', file);
 
     try {
+      setUploadProgress(30);
       const res = await fetch(`${API_BASE}/api/upload-doc`, {
         method: 'POST',
         body: formData,
       });
 
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      setUploadProgress(70);
       const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || 'Upload failed');
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       const { document: uploadedDocument, ...rest } = data as { document?: DocumentContext } & ChecklistPayload;
       if (uploadedDocument) {
         setDocuments(prev => [...prev.filter(doc => doc.name !== uploadedDocument.name), uploadedDocument]);
       }
       setChecklist(rest);
-      setActiveTab('chat');
-      addAssistantMessage(`Analyzed ${file.name}. See the generated checklist in Tools.`);
+      setUploadProgress(100);
+      addAssistantMessage(`Analyzed ${file.name}. See the generated checklist below.`);
     } catch (error) {
+      console.error('Upload Error:', error);
       const errorMsg = error instanceof Error ? error.message : 'Error uploading file';
       addAssistantMessage(`⚠️ ${errorMsg}`);
+      setUploadProgress(100);
     } finally {
       setLoading(false);
       setFile(null);
+      setTimeout(() => setUploadProgress(0), 900);
     }
   };
 
   return (
-    <main className="flex flex-col h-screen w-full bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900 dark:bg-slate-900 dark:text-slate-100">
+    <main className={`flex flex-col h-screen w-full ${theme.page}`}>
       <div className="shrink-0 w-full">
         <div className="max-w-6xl mx-auto px-2 sm:px-4 pb-2 sm:pb-4 pt-2 sm:pt-4">
-          <header className="relative rounded-lg sm:rounded-2xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 bg-white shadow-md border border-gray-200 dark:bg-slate-900/80 dark:shadow-lg dark:border-slate-700">
+          <header className={`relative rounded-lg sm:rounded-2xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 ${theme.header}`}>
             <div className="flex items-center gap-2 sm:gap-4 pr-10 sm:pr-0">
               <div>
                 <Image
@@ -183,12 +178,14 @@ function HomeContent() {
                 <h1 className="text-base sm:text-2xl font-semibold leading-snug tracking-normal max-w-[240px] sm:max-w-none">
                   Metropolia student advisor <span className="inline-block">🌍🇫🇮</span>
                 </h1>
-                <p className="hidden sm:block text-sm text-gray-600 dark:text-slate-200">Your personalized assistant for student life in Finland and Metropolia</p>
+                <p className={`hidden sm:block text-sm ${theme.bodyText}`}>Your personalized assistant for student life in Finland and Metropolia</p>
               </div>
             </div>
             <button
               onClick={toggleDarkMode}
-              className="absolute top-2 right-2 sm:static w-8 h-8 sm:w-auto sm:h-auto inline-flex items-center justify-center p-0 sm:p-2 rounded-md sm:rounded-lg transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-800 dark:text-yellow-300 dark:hover:bg-slate-700"
+              className={`absolute top-2 right-2 sm:static w-8 h-8 sm:w-auto sm:h-auto inline-flex items-center justify-center p-0 sm:p-2 rounded-md sm:rounded-lg transition-colors ${darkMode
+                ? 'bg-slate-800 text-yellow-300 hover:bg-slate-700'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               title={darkMode ? 'Switch to Light mode' : 'Switch to Dark mode'}
             >
               {darkMode ? (
@@ -215,15 +212,17 @@ function HomeContent() {
 
       <div className="flex-1 w-full overflow-hidden">
         <div className="max-w-6xl h-full mx-auto px-3 sm:px-4 pb-3 sm:pb-4 flex flex-col">
-          <div className="shadow-xl rounded-xl sm:rounded-2xl overflow-hidden flex flex-col h-full bg-white dark:bg-slate-900/70 dark:border dark:border-slate-700">
-            <div className="md:hidden flex border-b border-gray-200 dark:border-slate-700">
+          <div className={`shadow-xl rounded-xl sm:rounded-2xl overflow-hidden flex flex-col h-full ${theme.container}`}>
+            <div className={`md:hidden flex border-b ${theme.divider}`}>
               {tabs.map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`flex-1 py-2 sm:py-2.5 text-sm font-semibold transition ${activeTab === tab
                     ? 'bg-orange-500 text-white'
-                    : 'bg-transparent text-gray-700 dark:text-slate-200'
+                    : darkMode
+                      ? 'bg-transparent text-slate-200'
+                      : 'bg-transparent text-gray-700'
                     }`}
                 >
                   {tab === 'chat' ? 'Chat' : 'Tools'}
@@ -232,9 +231,9 @@ function HomeContent() {
             </div>
 
             <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-              <div className={`flex-1 flex flex-col md:border-r border-gray-200 dark:border-slate-700 ${activeTab === 'tools' ? 'hidden md:flex' : ''} min-h-0`}>
+              <div className={`flex-1 flex flex-col md:border-r ${theme.divider} ${activeTab === 'tools' ? 'hidden md:flex' : ''} min-h-0`}>
                 {documents.length > 0 && (
-                  <div className="flex-shrink-0 flex flex-wrap gap-1 sm:gap-2 p-2.5 sm:p-4 border-b border-gray-200 dark:border-slate-700 text-xs sm:text-sm bg-white/80 dark:bg-gray-900/70">
+                  <div className={`flex-shrink-0 flex flex-wrap gap-1 sm:gap-2 p-2.5 sm:p-4 border-b ${theme.divider} text-xs sm:text-sm ${darkMode ? 'bg-gray-900/70' : 'bg-white/80'}`}>
                     {documents.map((doc, idx) => (
                       <DocumentChip key={idx} doc={doc} />
                     ))}
@@ -249,13 +248,13 @@ function HomeContent() {
                 <div className="flex-1 overflow-y-auto p-2.5 sm:p-8 space-y-2.5 sm:space-y-4">
                   {messages.length === 0 && (
                     <div className="text-center mt-2 sm:mt-10 md:mt-16 min-h-full flex flex-col justify-start pt-3 sm:pt-0">
-                      <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-slate-100 mb-1.5 sm:mb-3">Welcome to Metropolia!</h2>
-                      <p className="text-sm sm:text-base text-gray-600 dark:text-slate-200 mb-2.5 sm:mb-6">Ask me anything about student life in Finland</p>
+                      <h2 className={`text-lg sm:text-2xl font-bold ${theme.headingText} mb-1.5 sm:mb-3`}>Welcome to Metropolia!</h2>
+                      <p className={`text-sm sm:text-base ${theme.bodyText} mb-2.5 sm:mb-6`}>Ask me anything about student life in Finland</p>
                       <div className="space-y-1.5 max-w-md mx-auto px-2">
                         {welcomePrompts.map((prompt) => (
-                          <div key={prompt} className="border rounded-lg p-2.5 sm:p-4 text-sm sm:text-sm text-left bg-gray-50 border-gray-200 dark:bg-slate-800/60 dark:border-slate-600">
+                          <div key={prompt} className={`border rounded-lg p-2.5 sm:p-4 text-sm sm:text-sm text-left ${darkMode ? 'bg-slate-800/60 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
                             <span className="font-semibold text-orange-500">Try: </span>
-                            <span className="text-gray-700 dark:text-slate-200">&quot;{prompt}&quot;</span>
+                            <span className={darkMode ? 'text-slate-200' : 'text-gray-700'}>&quot;{prompt}&quot;</span>
                           </div>
                         ))}
                       </div>
@@ -279,7 +278,7 @@ function HomeContent() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <div className="sticky bottom-0 flex-shrink-0 p-3 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:pb-6 border-t border-gray-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/90 backdrop-blur-sm">
+                <div className={`sticky bottom-0 flex-shrink-0 p-3 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:pb-6 border-t ${theme.divider} ${darkMode ? 'bg-slate-900/90' : 'bg-white/95'} backdrop-blur-sm`}>
                   <div className="flex items-center gap-2 sm:gap-3">
                     <input
                       type="text"
@@ -287,7 +286,7 @@ function HomeContent() {
                       onChange={(e) => setQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAsk()}
                       placeholder="Ask..."
-                      className="min-w-0 flex-1 px-3 sm:px-4 py-2.5 sm:py-4 text-sm sm:text-base border-2 rounded-lg sm:rounded-xl focus:outline-none focus:border-orange-500 transition-colors bg-white border-gray-200 text-gray-900 placeholder-gray-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400"
+                      className={`min-w-0 flex-1 px-3 sm:px-4 py-2.5 sm:py-4 text-sm sm:text-base border-2 rounded-lg sm:rounded-xl focus:outline-none focus:border-orange-500 transition-colors ${theme.input}`}
                     />
                     <button
                       onClick={handleAsk}
@@ -317,6 +316,7 @@ function HomeContent() {
                 onSubmit={submitFile}
                 loading={loading}
                 checklist={checklist}
+                uploadProgress={uploadProgress}
                 hiddenOnMobile={activeTab === 'chat'}
               />
             </div>

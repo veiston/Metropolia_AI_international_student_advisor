@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify, Response, stream_with_context
+from flask import Flask, request, jsonify, Response, stream_with_context, redirect
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
@@ -10,6 +10,11 @@ except Exception:
 
 app = Flask(__name__)
 CORS(app)
+
+
+@app.route('/', methods=['GET'])
+def root():
+    return redirect('http://localhost:3000')
 
 
 @app.route('/api/health', methods=['GET'])
